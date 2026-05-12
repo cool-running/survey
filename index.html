@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="ko" translate="no" class="notranslate">
+<head>
+<meta charset="UTF-8">
+<meta name="google" content="notranslate">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#1D9E75">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>조사건 관리</title>
+<link rel="manifest" href="./manifest.json">
+<link rel="apple-touch-icon" href="./icon-192.png">
+<style>
+:root{
+  --green:#1D9E75;--green2:#17b584;
+  --blue:#185FA5;
+  --border:#D8D6CE;--text:#1a1a1a;--sub:#666;--hint:#bbb;
+  --bg:#F5F4F0;--card:#fff;--red:#E53935;--orange:#F57C00;
+  --r:12px;--rs:8px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text);font-size:14px;min-height:100vh;-webkit-user-select:none;user-select:none;padding-bottom:calc(20px + env(safe-area-inset-bottom,0px))}
+
+/* ── 헤더 ── */
+.hdr{background:var(--green);color:#fff;padding:16px 16px 14px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:200}
+.hdr-icon{width:34px;height:34px;background:rgba(255,255,255,.18);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.hdr-text{flex:1;min-width:0}
+.hdr-title{font-size:17px;font-weight:700}
+.hdr-sub{font-size:11px;opacity:.7;margin-top:2px}
+.hdr-btn{width:36px;height:36px;display:flex;align-items:center;justify-content:center;color:#fff;cursor:pointer;border-radius:8px;background:rgba(255,255,255,.15);font-size:14px;font-weight:700;flex-shrink:0}
+
+/* ── 화면 ── */
+.screen{display:none}
+.screen.on{display:block}
+
+/* ── 프로젝트 목록 ── */
+.proj-top{padding:14px}
+.new-btn{width:100%;padding:14px;background:var(--green);color:#fff;border-radius:var(--r);font-size:15px;font-weight:700;text-align:center;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;-webkit-tap-highlight-color:transparent}
+.new-btn:active{opacity:.85}
+.proj-list{padding:0 14px 14px}
+.proj-card{background:var(--card);border-radius:var(--r);border:0.5px solid var(--border);margin-bottom:10px;overflow:hidden;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.proj-card:active{opacity:.9}
+.pct{padding:14px 16px 10px;display:flex;align-items:flex-start;gap:12px}
+.p-emoji{font-size:30px;flex-shrink:0;line-height:1}
+.p-info{flex:1;min-width:0}
+.p-name{font-size:15px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.p-meta{font-size:12px;color:var(--sub);margin-top:3px}
+.prog-wrap{padding:0 16px 4px}
+.prog-bg{height:3px;background:#eee;border-radius:2px}
+.prog-fill{height:100%;background:var(--green);border-radius:2px;transition:width .3s}
+.p-stats{padding:8px 16px 12px;display:flex;gap:0;border-top:1px solid #f0eeea}
+.pst{flex:1;text-align:center}
+.pst-v{font-size:16px;font-weight:800;line-height:1}
+.pst-v.g{color:var(--green)}.pst-v.r{color:var(--red)}.pst-v.b{color:var(--blue)}
+.pst-l{font-size:10px;color:var(--sub);font-weight:600;margin-top:3px}
+.empty-proj{text-align:center;padding:70px 20px;color:var(--hint)}
+.empty-proj .ei{font-size:48px;margin-bottom:14px}
+.empty-proj p{font-size:13px;line-height:1.9}
+
+/* ── 상세 ── */
+.sumbar{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:12px 14px 8px}
+.scrd{background:var(--card);border-radius:var(--rs);padding:10px 6px;text-align:center;border:0.5px solid var(--border)}
+.sval{font-size:20px;font-weight:800;letter-spacing:-.03em;line-height:1}
+.sval.g{color:var(--green)}.sval.r{color:var(--red)}.sval.b{color:var(--blue)}
+.slbl{font-size:10px;color:var(--sub);margin-top:3px;font-weight:600}
+.search-wrap{padding:0 14px 8px}
+.search-box{width:100%;padding:9px 14px;border:1px solid var(--border);border-radius:20px;font-size:14px;background:var(--card);outline:none;-webkit-user-select:text;user-select:text}
+.grp-hdr{padding:6px 14px 4px;font-size:11px;font-weight:700;color:var(--sub);background:var(--bg);display:flex;justify-content:space-between;align-items:center;letter-spacing:.04em}
+.grp-bdg{font-size:10px;background:var(--green);color:#fff;padding:2px 7px;border-radius:8px;font-weight:700}
+.row{display:flex;align-items:center;padding:11px 14px;background:var(--card);border-bottom:1px solid #f0eeea;gap:10px;cursor:pointer}
+.row:active{background:#f5f5f5}
+.row.done{background:#f0faf6}
+.row.fail{background:#fff5f5}
+.sdot{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;border:1.5px solid var(--border);flex-shrink:0}
+.sdot.done{background:var(--green);border-color:var(--green);color:#fff}
+.sdot.fail{background:#ffebee;border-color:#ffcdd2;color:var(--red)}
+.r-main{flex:1;min-width:0}
+.r-name{font-size:15px;font-weight:600;letter-spacing:-.02em}
+.r-memo{font-size:11px;color:var(--hint);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.r-cnt{font-size:12px;color:var(--sub);min-width:28px;text-align:right;flex-shrink:0}
+.r-date{font-size:12px;color:var(--sub);min-width:52px;text-align:right;flex-shrink:0}
+.empty{text-align:center;padding:60px 20px;color:var(--hint);font-size:13px}
+
+/* ── FAB ── */
+.fab{position:fixed;bottom:calc(22px + env(safe-area-inset-bottom,0px));right:18px;width:54px;height:54px;background:var(--green);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:28px;box-shadow:0 4px 18px rgba(29,158,117,.45);cursor:pointer;z-index:150}
+.fab:active{transform:scale(.91)}
+
+/* ── 오버레이/시트 ── */
+.ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:300;align-items:flex-end}
+.ov.on{display:flex}
+.sheet{background:var(--card);border-radius:18px 18px 0 0;padding:20px 18px;padding-bottom:calc(24px + env(safe-area-inset-bottom,0px));width:100%;max-height:90vh;overflow-y:auto;animation:up .22s ease}
+@keyframes up{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.sh{width:36px;height:4px;background:#ddd;border-radius:2px;margin:0 auto 18px}
+.sh-title{font-size:16px;font-weight:700;margin-bottom:16px}
+.fld{margin-bottom:13px}
+.fld label{display:block;font-size:12px;font-weight:600;color:var(--sub);margin-bottom:5px}
+.fld input,.fld select{width:100%;padding:11px 13px;border:1px solid var(--border);border-radius:var(--rs);font-size:15px;background:var(--card);outline:none;-webkit-user-select:text;user-select:text;-webkit-appearance:none;appearance:none;font-family:inherit}
+.fld select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23999' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 13px center;padding-right:36px}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.st-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:13px}
+.stb{padding:11px 4px;border-radius:var(--rs);border:1.5px solid var(--border);text-align:center;font-size:13px;font-weight:700;cursor:pointer}
+.stb.sp{border-color:#888;background:#f5f5f5;color:#444}
+.stb.sd{border-color:var(--green);background:#e8faf3;color:var(--green)}
+.stb.sf{border-color:var(--red);background:#fff5f5;color:var(--red)}
+.btn-row{display:flex;gap:8px;margin-top:6px}
+.btn{flex:1;padding:13px;border-radius:var(--rs);font-size:15px;font-weight:700;border:none;cursor:pointer;font-family:inherit}
+.btn-p{background:var(--green);color:#fff}
+.btn-d{background:#fff0f0;color:var(--red);border:1px solid #ffcdd2}
+.btn-c{background:#f0f0f0;color:#555}
+.chip-row{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px}
+.chip{padding:7px 13px;border-radius:20px;border:1.5px solid var(--border);font-size:13px;font-weight:600;cursor:pointer;color:var(--sub)}
+.chip.on{border-color:var(--green);background:#e8faf3;color:var(--green)}
+
+/* ── 공유 시트 ── */
+.sh-tabs{display:flex;border:1px solid var(--border);border-radius:var(--rs);overflow:hidden;margin-bottom:16px}
+.sh-tab{flex:1;padding:10px;text-align:center;font-size:13px;font-weight:600;cursor:pointer;color:var(--sub)}
+.sh-tab.on{background:var(--green);color:#fff}
+.code-box{background:#f5f5f5;border-radius:var(--rs);padding:12px;font-size:11px;font-family:monospace;word-break:break-all;max-height:130px;overflow-y:auto;border:1px solid var(--border);-webkit-user-select:text;user-select:text}
+.big-btn{width:100%;padding:13px;border-radius:var(--rs);font-size:14px;font-weight:700;border:none;cursor:pointer;font-family:inherit;margin-top:10px}
+.import-ta{width:100%;height:110px;padding:10px;border:1px solid var(--border);border-radius:var(--rs);font-size:12px;font-family:monospace;resize:none;outline:none;-webkit-user-select:text;user-select:text}
+</style>
+</head>
+<body>
+
+<!-- ══ 화면1: 프로젝트 목록 ══ -->
+<div class="screen on" id="scr-list">
+  <div class="hdr">
+    <div class="hdr-icon">📋</div>
+    <div class="hdr-text">
+      <div class="hdr-title">조사건 관리</div>
+      <div class="hdr-sub">손해평가 현장조사</div>
+    </div>
+    <div class="hdr-btn" onclick="openShare('all')" title="공유/가져오기">⇅</div>
+  </div>
+  <div class="proj-top">
+    <div class="new-btn" onclick="openProjSheet(null)">＋ &nbsp;새 조사 프로젝트</div>
+  </div>
+  <div class="proj-list" id="proj-list"></div>
+</div>
+
+<!-- ══ 화면2: 프로젝트 상세 ══ -->
+<div class="screen" id="scr-det">
+  <div class="hdr">
+    <div class="hdr-btn" onclick="goList()" style="font-size:22px;background:none">‹</div>
+    <div class="hdr-text" style="margin-left:2px">
+      <div class="hdr-title" id="det-title">-</div>
+      <div class="hdr-sub" id="det-sub">-</div>
+    </div>
+    <div class="hdr-btn" onclick="openShare('proj')">⇅</div>
+    <div class="hdr-btn" onclick="openProjSheet('cur')" style="margin-left:4px">✎</div>
+  </div>
+  <div class="sumbar">
+    <div class="scrd"><div class="sval b" id="d-tot">0</div><div class="slbl">조사건</div></div>
+    <div class="scrd"><div class="sval g" id="d-don">0</div><div class="slbl">완료</div></div>
+    <div class="scrd"><div class="sval r" id="d-rem">0</div><div class="slbl">잔여</div></div>
+    <div class="scrd"><div class="sval b" id="d-pct">0%</div><div class="slbl">진행률</div></div>
+  </div>
+  <div class="search-wrap">
+    <input class="search-box" type="search" id="det-q" placeholder="🔍  이름 검색" oninput="renderDet()" autocomplete="off">
+  </div>
+  <div id="det-list"></div>
+  <div class="fab" onclick="openItemSheet(null)">＋</div>
+</div>
+
+<!-- ══ 시트: 프로젝트 ══ -->
+<div class="ov" id="ov-proj" onclick="bgClose('ov-proj')">
+<div class="sheet" onclick="event.stopPropagation()">
+  <div class="sh"></div>
+  <div class="sh-title" id="ps-title">새 조사 프로젝트</div>
+  <div class="fld">
+    <label>품목</label>
+    <div class="chip-row" id="crop-chips">
+      <div class="chip" onclick="pickCrop(this,'마늘')">🧄 마늘</div>
+      <div class="chip" onclick="pickCrop(this,'감자')">🥔 감자</div>
+      <div class="chip" onclick="pickCrop(this,'인삼')">🌿 인삼</div>
+      <div class="chip" onclick="pickCrop(this,'단호박')">🎃 단호박</div>
+      <div class="chip" onclick="pickCrop(this,'콩')">🫘 콩</div>
+      <div class="chip" onclick="pickCrop(this,'고구마')">🍠 고구마</div>
+      <div class="chip" onclick="pickCrop(this,'양파')">🧅 양파</div>
+      <div class="chip" onclick="pickCrop(this,'고추')">🌶️ 고추</div>
+    </div>
+    <input type="text" id="p-crop" placeholder="직접 입력" autocomplete="off">
+  </div>
+  <div class="fld"><label>농협명</label><input type="text" id="p-coop" placeholder="예) 김녕농협" autocomplete="off"></div>
+  <div class="fld"><label>지점명 (선택)</label><input type="text" id="p-branch" placeholder="예) 우도지점" autocomplete="off"></div>
+  <div class="fld"><label>조사자</label><input type="text" id="p-insp" placeholder="이름" autocomplete="off"></div>
+  <div class="btn-row">
+    <div class="btn btn-c" onclick="closeOv('ov-proj')">취소</div>
+    <div class="btn btn-d" id="p-del" style="display:none" onclick="delProj()">삭제</div>
+    <div class="btn btn-p" onclick="saveProj()">저장</div>
+  </div>
+</div></div>
+
+<!-- ══ 시트: 계약자 ══ -->
+<div class="ov" id="ov-item" onclick="bgClose('ov-item')">
+<div class="sheet" onclick="event.stopPropagation()">
+  <div class="sh"></div>
+  <div class="sh-title" id="is-title">계약자 추가</div>
+  <div class="fld"><label>계약자 이름</label><input type="text" id="i-name" placeholder="이름" autocomplete="off"></div>
+  <div class="two-col">
+    <div class="fld"><label>수확일</label>
+      <select id="i-date">
+        <option value="">선택</option>
+        <option>14일</option><option>15일</option><option>16일</option>
+        <option>18일</option><option>19일</option><option>20일</option>
+        <option>20일 이후</option><option>21일</option><option>22일</option>
+        <option>23일</option><option>24일</option><option>25일</option>
+        <option>26일</option><option>27일</option><option>28일</option>
+        <option>29일</option><option>30일</option><option>5월말</option>
+        <option>미정</option>
+      </select>
+    </div>
+    <div class="fld"><label>조사건수</label><input type="number" id="i-cnt" placeholder="건수" min="0" inputmode="numeric"></div>
+  </div>
+  <div class="fld"><label>메모</label><input type="text" id="i-memo" placeholder="전화요망, 연락처 등" autocomplete="off"></div>
+  <div class="fld"><label>조사 상태</label></div>
+  <div class="st-row">
+    <div class="stb" id="sb0" onclick="pickSt('pending')">진행중</div>
+    <div class="stb" id="sb1" onclick="pickSt('done')">○ 완료</div>
+    <div class="stb" id="sb2" onclick="pickSt('fail')">× 전화불가</div>
+  </div>
+  <div class="btn-row">
+    <div class="btn btn-c" onclick="closeOv('ov-item')">취소</div>
+    <div class="btn btn-d" id="i-del" style="display:none" onclick="delItem()">삭제</div>
+    <div class="btn btn-p" onclick="saveItem()">저장</div>
+  </div>
+</div></div>
+
+<!-- ══ 시트: 공유 ══ -->
+<div class="ov" id="ov-share" onclick="bgClose('ov-share')">
+<div class="sheet" onclick="event.stopPropagation()">
+  <div class="sh"></div>
+  <div class="sh-title" id="share-ttl">데이터 공유</div>
+  <div class="sh-tabs">
+    <div class="sh-tab on" id="stab0" onclick="shareTab(0)">내보내기</div>
+    <div class="sh-tab" id="stab1" onclick="shareTab(1)">가져오기</div>
+  </div>
+  <div id="s-export">
+    <div style="font-size:12px;color:var(--sub);margin-bottom:8px">아래 텍스트를 복사해서 카톡 등으로 전송하세요</div>
+    <div class="code-box" id="s-code"></div>
+    <button class="big-btn" style="background:var(--green);color:#fff" onclick="copyExport()">📋 복사하기</button>
+  </div>
+  <div id="s-import" style="display:none">
+    <div style="font-size:12px;color:var(--sub);margin-bottom:8px">받은 텍스트를 붙여넣기 하세요</div>
+    <textarea class="import-ta" id="s-paste" placeholder="여기에 붙여넣기..."></textarea>
+    <button class="big-btn" style="background:var(--blue);color:#fff;margin-top:10px" onclick="doImport()">✓ 가져오기</button>
+  </div>
+</div></div>
+
+<script>
+// ══ 스토어 ══════════════════════════════════════
+const KEY='survey_v2';
+let db={projects:[]};
+let curId=null, editItemIdx=null, editProjId=null;
+let curSt='pending', shareMode='all';
+
+function load(){try{db=JSON.parse(localStorage.getItem(KEY))||{projects:[]};}catch(e){db={projects:[]};}}
+function save(){localStorage.setItem(KEY,JSON.stringify(db));}
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,5);}
+
+// ══ 날짜 정렬 ══
+const DORD=['14일','15일','16일','18일','19일','20일','20일 이후','21일','22일','23일','24일','25일','26일','27일','28일','29일','30일','5월말','미정'];
+const dk=d=>{const i=DORD.indexOf(d);return i<0?99:i;};
+
+// ══ 이모지 ══
+const EMOJI={마늘:'🧄',감자:'🥔',인삼:'🌿',단호박:'🎃',콩:'🫘',고구마:'🍠',양파:'🧅',고추:'🌶️',배추:'🥬',무:'🥕'};
+const ce=c=>EMOJI[c]||'🌾';
+
+// ══ 화면 전환 ══
+const show=id=>document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('on',s.id===id));
+
+// ══ 프로젝트 목록 ══════════════════════════════
+function goList(){show('scr-list');renderList();}
+function renderList(){
+  load();
+  const el=document.getElementById('proj-list');
+  if(!db.projects.length){
+    el.innerHTML=`<div class="empty-proj"><div class="ei">📋</div><p>아직 프로젝트가 없습니다<br>위 버튼으로 새 프로젝트를 만드세요</p></div>`;
+    return;
+  }
+  el.innerHTML=db.projects.map(p=>{
+    const tot=p.items.reduce((a,x)=>a+(+x.c||0),0);
+    const don=p.items.filter(x=>x.s==='done').reduce((a,x)=>a+(+x.c||0),0);
+    const pct=tot?Math.round(don/tot*100):0;
+    const nm=p.branch?`${p.coop} ${p.branch}`:p.coop;
+    return `<div class="proj-card" onclick="openProj('${p.id}')">
+      <div class="pct">
+        <div class="p-emoji">${ce(p.crop)}</div>
+        <div class="p-info">
+          <div class="p-name">${p.crop} — ${nm}</div>
+          <div class="p-meta">${p.insp?p.insp+' · ':''}${p.items.length}명 · ${new Date(p.created).toLocaleDateString('ko')}</div>
+        </div>
+      </div>
+      <div class="prog-wrap"><div class="prog-bg"><div class="prog-fill" style="width:${pct}%"></div></div></div>
+      <div class="p-stats">
+        <div class="pst"><div class="pst-v b">${tot}</div><div class="pst-l">조사건</div></div>
+        <div class="pst"><div class="pst-v g">${don}</div><div class="pst-l">완료</div></div>
+        <div class="pst"><div class="pst-v r">${tot-don}</div><div class="pst-l">잔여</div></div>
+        <div class="pst"><div class="pst-v">${pct}%</div><div class="pst-l">진행률</div></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ══ 프로젝트 상세 ══════════════════════════════
+function openProj(id){
+  load(); curId=id;
+  const p=db.projects.find(x=>x.id===id); if(!p)return;
+  const nm=p.branch?`${p.coop} ${p.branch}`:p.coop;
+  document.getElementById('det-title').textContent=`${ce(p.crop)} ${p.crop} — ${nm}`;
+  document.getElementById('det-sub').textContent=p.insp?`조사자: ${p.insp}`:'';
+  document.getElementById('det-q').value='';
+  show('scr-det'); renderDet();
+}
+function renderDet(){
+  load();
+  const p=db.projects.find(x=>x.id===curId); if(!p)return;
+  const q=(document.getElementById('det-q').value||'').trim();
+  const items=p.items;
+  const tot=items.reduce((a,x)=>a+(+x.c||0),0);
+  const don=items.filter(x=>x.s==='done').reduce((a,x)=>a+(+x.c||0),0);
+  document.getElementById('d-tot').textContent=tot;
+  document.getElementById('d-don').textContent=don;
+  document.getElementById('d-rem').textContent=tot-don;
+  document.getElementById('d-pct').textContent=(tot?Math.round(don/tot*100):0)+'%';
+  const fil=q?items.map((x,i)=>({...x,_i:i})).filter(x=>x.n.includes(q)):items.map((x,i)=>({...x,_i:i}));
+  const grps={};
+  fil.forEach(x=>{if(!grps[x.d])grps[x.d]=[];grps[x.d].push(x);});
+  const dates=Object.keys(grps).sort((a,b)=>dk(a)-dk(b));
+  let html='';
+  if(!fil.length){html='<div class="empty">검색 결과 없음</div>';}
+  else dates.forEach(d=>{
+    const g=grps[d];
+    const gt=g.reduce((a,x)=>a+(+x.c||0),0);
+    const gd=g.filter(x=>x.s==='done').length;
+    html+=`<div class="grp-hdr"><span>${d} · ${g.length}명 / ${gt}건</span><span class="grp-bdg">완료 ${gd}</span></div>`;
+    g.forEach(x=>{
+      const sc=x.s==='done'?'done':x.s==='fail'?'fail':'';
+      const si=x.s==='done'?'✓':x.s==='fail'?'✕':'';
+      html+=`<div class="row ${sc}" onclick="openItemSheet(${x._i})">
+        <div class="sdot ${sc}">${si}</div>
+        <div class="r-main"><div class="r-name">${x.n}</div>${x.m?`<div class="r-memo">${x.m}</div>`:''}</div>
+        <div class="r-cnt">${x.c}건</div>
+        <div class="r-date">${x.d||'미정'}</div>
+      </div>`;
+    });
+  });
+  document.getElementById('det-list').innerHTML=html;
+}
+
+// ══ 계약자 시트 ════════════════════════════════
+function openItemSheet(idx){
+  editItemIdx=idx; load();
+  const p=db.projects.find(x=>x.id===curId); if(!p)return;
+  if(idx===null){
+    document.getElementById('is-title').textContent='계약자 추가';
+    document.getElementById('i-name').value='';
+    document.getElementById('i-date').value='';
+    document.getElementById('i-cnt').value='';
+    document.getElementById('i-memo').value='';
+    document.getElementById('i-del').style.display='none';
+    pickSt('pending');
+  } else {
+    const x=p.items[idx];
+    document.getElementById('is-title').textContent='정보 수정';
+    document.getElementById('i-name').value=x.n;
+    document.getElementById('i-date').value=x.d;
+    document.getElementById('i-cnt').value=x.c;
+    document.getElementById('i-memo').value=x.m;
+    document.getElementById('i-del').style.display='flex';
+    pickSt(x.s);
+  }
+  openOv('ov-item');
+  setTimeout(()=>document.getElementById('i-name').focus(),300);
+}
+function pickSt(s){
+  curSt=s;
+  document.getElementById('sb0').className='stb'+(s==='pending'?' sp':'');
+  document.getElementById('sb1').className='stb'+(s==='done'?   ' sd':'');
+  document.getElementById('sb2').className='stb'+(s==='fail'?   ' sf':'');
+}
+function saveItem(){
+  const name=(document.getElementById('i-name').value||'').trim();
+  if(!name){alert('이름을 입력하세요');return;}
+  const item={n:name,d:document.getElementById('i-date').value||'미정',c:parseInt(document.getElementById('i-cnt').value)||0,s:curSt,m:(document.getElementById('i-memo').value||'').trim()};
+  load();
+  const p=db.projects.find(x=>x.id===curId); if(!p)return;
+  if(editItemIdx===null)p.items.push(item);
+  else p.items[editItemIdx]=item;
+  save(); closeOv('ov-item'); renderDet();
+}
+function delItem(){
+  if(!confirm('삭제하시겠습니까?'))return;
+  load();
+  const p=db.projects.find(x=>x.id===curId); if(!p)return;
+  p.items.splice(editItemIdx,1);
+  save(); closeOv('ov-item'); renderDet();
+}
+
+// ══ 프로젝트 시트 ══════════════════════════════
+function openProjSheet(mode){
+  if(mode===null){
+    editProjId=null;
+    document.getElementById('ps-title').textContent='새 조사 프로젝트';
+    document.getElementById('p-crop').value='';
+    document.getElementById('p-coop').value='';
+    document.getElementById('p-branch').value='';
+    document.getElementById('p-insp').value='';
+    document.getElementById('p-del').style.display='none';
+    document.querySelectorAll('.chip').forEach(c=>c.classList.remove('on'));
+  } else {
+    load();
+    const p=db.projects.find(x=>x.id===curId); if(!p)return;
+    editProjId=curId;
+    document.getElementById('ps-title').textContent='프로젝트 편집';
+    document.getElementById('p-crop').value=p.crop;
+    document.getElementById('p-coop').value=p.coop;
+    document.getElementById('p-branch').value=p.branch||'';
+    document.getElementById('p-insp').value=p.insp||'';
+    document.getElementById('p-del').style.display='flex';
+    document.querySelectorAll('.chip').forEach(c=>c.classList.toggle('on',c.textContent.trim().includes(p.crop)));
+  }
+  openOv('ov-proj');
+  setTimeout(()=>document.getElementById('p-coop').focus(),300);
+}
+function pickCrop(el,v){
+  document.querySelectorAll('.chip').forEach(c=>c.classList.remove('on'));
+  el.classList.add('on');
+  document.getElementById('p-crop').value=v;
+}
+function saveProj(){
+  const crop=(document.getElementById('p-crop').value||'').trim();
+  const coop=(document.getElementById('p-coop').value||'').trim();
+  if(!crop||!coop){alert('품목과 농협명을 입력하세요');return;}
+  load();
+  if(editProjId){
+    const p=db.projects.find(x=>x.id===editProjId);
+    if(p){p.crop=crop;p.coop=coop;p.branch=(document.getElementById('p-branch').value||'').trim();p.insp=(document.getElementById('p-insp').value||'').trim();}
+  } else {
+    db.projects.unshift({id:uid(),crop,coop,branch:(document.getElementById('p-branch').value||'').trim(),insp:(document.getElementById('p-insp').value||'').trim(),created:Date.now(),items:[]});
+  }
+  save(); closeOv('ov-proj');
+  if(editProjId)renderDet(); else renderList();
+}
+function delProj(){
+  if(!confirm('프로젝트를 삭제하시겠습니까?\n모든 데이터가 삭제됩니다.'))return;
+  load(); db.projects=db.projects.filter(x=>x.id!==curId);
+  save(); closeOv('ov-proj'); goList();
+}
+
+// ══ 공유 ══════════════════════════════════════
+function openShare(mode){
+  shareMode=mode;
+  document.getElementById('share-ttl').textContent=mode==='all'?'전체 데이터 공유':'이 프로젝트 공유';
+  document.getElementById('s-paste').value='';
+  shareTab(0); openOv('ov-share');
+  load();
+  const data=mode==='all'?db:{projects:[db.projects.find(x=>x.id===curId)].filter(Boolean)};
+  document.getElementById('s-code').textContent=JSON.stringify(data);
+}
+function shareTab(i){
+  document.getElementById('stab0').classList.toggle('on',i===0);
+  document.getElementById('stab1').classList.toggle('on',i===1);
+  document.getElementById('s-export').style.display=i===0?'':'none';
+  document.getElementById('s-import').style.display=i===1?'':'none';
+}
+function copyExport(){
+  const t=document.getElementById('s-code').textContent;
+  navigator.clipboard?.writeText(t).then(()=>{
+    const b=document.querySelector('#ov-share .big-btn');
+    b.textContent='✓ 복사됨!'; setTimeout(()=>b.textContent='📋 복사하기',2000);
+  }).catch(()=>{
+    const ta=document.createElement('textarea');
+    ta.value=t;ta.style.cssText='position:fixed;opacity:0';
+    document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);
+    alert('복사됐습니다!');
+  });
+}
+function doImport(){
+  const raw=(document.getElementById('s-paste').value||'').trim();
+  if(!raw){alert('데이터를 붙여넣으세요');return;}
+  let imp; try{imp=JSON.parse(raw);}catch(e){alert('잘못된 형식입니다');return;}
+  if(!imp.projects||!Array.isArray(imp.projects)){alert('올바른 데이터가 아닙니다');return;}
+  load();
+  const exist=new Set(db.projects.map(x=>x.id));
+  let added=0;
+  imp.projects.forEach(p=>{
+    if(!exist.has(p.id)){db.projects.unshift(p);added++;}
+    else{const i=db.projects.findIndex(x=>x.id===p.id);if(i>=0)db.projects[i]=p;}
+  });
+  save(); closeOv('ov-share');
+  alert(`완료! ${added}개 추가, ${imp.projects.length-added}개 업데이트`);
+  document.getElementById('scr-list').classList.contains('on')?renderList():renderDet();
+}
+
+// ══ 유틸 ══════════════════════════════════════
+function openOv(id){document.getElementById(id).classList.add('on');}
+function closeOv(id){document.getElementById(id).classList.remove('on');}
+function bgClose(id){closeOv(id);}
+
+// ══ 초기화 ════════════════════════════════════
+load(); renderList();
+
+// SW 해제
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.getRegistrations().then(r=>r.forEach(x=>x.unregister()));
+  caches.keys().then(k=>Promise.all(k.map(x=>caches.delete(x))));
+}
+</script>
+</body>
+</html>
