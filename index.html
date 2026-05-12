@@ -243,7 +243,7 @@ body{font-family:-apple-system,'Noto Sans KR',sans-serif;background:var(--bg);co
     <div class="hdr-btn" onclick="goProjects()" style="font-size:22px;background:none">‹</div>
     <div class="hdr-text" style="margin-left:2px">
       <div class="hdr-title" id="det-title">-</div>
-      <div class="hdr-title" id="det-sub" style="margin-top:2px;font-size:17px"></div>
+      <div id="det-sub" style="margin-top:2px;font-size:17px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%"></div>
       <div class="hdr-sub" id="det-insp" style="margin-top:2px;opacity:.7"></div>
     </div>
     <div class="hdr-btn" onclick="captureProj()">📷</div>
@@ -685,7 +685,11 @@ function openProj(id){
   const p=db.projects.find(x=>x.id===id); if(!p)return;
   const nm=p.branch?`${p.coop} ${p.branch}`:p.coop;
   document.getElementById('det-title').textContent=`${ce(p.crop)} ${p.crop}`;
-  document.getElementById('det-sub').textContent=nm;
+  const subEl=document.getElementById('det-sub');
+  subEl.textContent=nm;
+  // 길이에 따라 폰트 자동 조정
+  const fs = nm.length<=8?17:nm.length<=12?15:nm.length<=16?13:11;
+  subEl.style.fontSize=fs+'px';
   document.getElementById('det-insp').textContent=p.insp?`조사자: ${p.insp}`:'';
   document.getElementById('det-q').value='';
   show('scr-det'); renderDet();
