@@ -27,7 +27,7 @@ body{font-family:-apple-system,'Noto Sans KR',sans-serif;background:var(--bg);co
 .hdr-icon{width:34px;height:34px;background:rgba(255,255,255,.18);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
 .hdr-text{flex:1;min-width:0}
 .hdr-title{font-size:17px;font-weight:700}
-.hdr-sub{font-size:11px;opacity:.7;margin-top:2px}
+.hdr-sub{font-size:11px;opacity:.7;margin-top:2px;line-height:1.6}
 .hdr-btn{width:36px;height:36px;display:flex;align-items:center;justify-content:center;color:#fff;cursor:pointer;border-radius:8px;background:rgba(255,255,255,.15);font-size:14px;font-weight:700;flex-shrink:0}
 
 /* ── 하단 탭 ── */
@@ -243,7 +243,8 @@ body{font-family:-apple-system,'Noto Sans KR',sans-serif;background:var(--bg);co
     <div class="hdr-btn" onclick="goProjects()" style="font-size:22px;background:none">‹</div>
     <div class="hdr-text" style="margin-left:2px">
       <div class="hdr-title" id="det-title">-</div>
-      <div class="hdr-sub" id="det-sub">-</div>
+      <div class="hdr-title" id="det-sub" style="margin-top:2px;font-size:17px"></div>
+      <div class="hdr-sub" id="det-insp" style="margin-top:2px;opacity:.7"></div>
     </div>
     <div class="hdr-btn" onclick="captureProj()">📷</div>
     <div class="hdr-btn" onclick="openShare('proj')" style="margin-left:4px">⇅</div>
@@ -683,8 +684,9 @@ function openProj(id){
   localStorage.setItem('last_proj_id',id);
   const p=db.projects.find(x=>x.id===id); if(!p)return;
   const nm=p.branch?`${p.coop} ${p.branch}`:p.coop;
-  document.getElementById('det-title').textContent=`${ce(p.crop)} ${p.crop} — ${nm}`;
-  document.getElementById('det-sub').textContent=p.insp?`조사자: ${p.insp}`:'';
+  document.getElementById('det-title').textContent=`${ce(p.crop)} ${p.crop}`;
+  document.getElementById('det-sub').textContent=nm;
+  document.getElementById('det-insp').textContent=p.insp?`조사자: ${p.insp}`:'';
   document.getElementById('det-q').value='';
   show('scr-det'); renderDet();
 }
