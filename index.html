@@ -783,6 +783,15 @@ function pickSt(s){
 function saveItem(){
   const name=(document.getElementById('i-name').value||'').trim();
   if(!name){alert('이름을 입력하세요');return;}
+  // 중복 이름 체크 (신규 추가 시에만)
+  if(editItemIdx===null){
+    load();
+    const p=db.projects.find(x=>x.id===curId);
+    if(p){
+      const dup=p.items.find(x=>x.n===name);
+      if(dup && !confirm(`"${name}" 이름의 계약자가 이미 있습니다.\n중복으로 계속 추가하시겠습니까?`)) return;
+    }
+  }
   const totalCnt=parseInt(document.getElementById('i-cnt').value)||0;
   const doneCntInput=parseInt(document.getElementById('i-done-cnt').value)||0;
   let doneCnt=0;
@@ -924,19 +933,28 @@ function buildCaptureCard(title, subtitle, items){
   const now=new Date();
   const dateStr=`${now.getFullYear()}.${now.getMonth()+1}.${now.getDate()} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
 
-  // 5열 그리드 - 계약자명(건수) 형태
-  // 각 셀: 이름 + 건수 + 상태 색상
-  let cells='';
-  items.forEach(x=>{
+  // 완료 ㄱㄴ순 → 부분완료 ㄱㄴ순 → 진행중 ㄱㄴ순 정렬
+  const stOrder = s => s==='done'?0:s==='partial'?1:2;
+  const sorted = [...items]
+    .map((x,i)=>({...x,_orig:i}))
+    .sort((a,b)=>{
+      const sd = stOrder(a.s)-stOrder(b.s);
+      if(sd!==0) return sd;
+      return a.n.localeCompare(b.n,'ko');
+    });
+
+  // 표 형태로 출력 (순번 | 이름 | 완료여부)
+  let rows='';
+  sorted.forEach((x,i)=>{
     const doneCnt=x.s==='done'?(+x.c||0):typeof x.doneCnt==='number'?x.doneCnt:0;
-    const bg = x.s==='done'?'#e8f5e9':x.s==='partial'?'#fffde7':x.s==='fail'?'#ffebee':'#f5f5f5';
-    const fc = x.s==='done'?'#1D9E75':x.s==='partial'?'#f57f17':x.s==='fail'?'#E53935':'#444';
-    const statusTxt = x.s==='done'?'완료':x.s==='partial'?`${doneCnt}/${x.c}`:x.s==='fail'?'불가':'진행';
-    cells+=`<div style="background:${bg};border-radius:5px;padding:5px 4px;text-align:center;min-width:0">
-      <div style="font-size:11px;font-weight:700;color:#1a1a1a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${x.n}</div>
-      <div style="font-size:10px;color:#666;margin-top:1px">${x.c}건</div>
-      <div style="font-size:10px;font-weight:700;color:${fc};margin-top:1px">${statusTxt}</div>
-    </div>`;
+    const bg = x.s==='done'?'#e8f5e9':x.s==='partial'?'#fffde7':'#ffffff';
+    const fc = x.s==='done'?'#1D9E75':x.s==='partial'?'#f57f17':'#444';
+    const statusTxt = x.s==='done'?'✓ 완료':x.s==='partial'?`${doneCnt}/${x.c}건 완료`:'진행중';
+    rows+=`<tr style="background:${bg}">
+      <td style="padding:5px 6px;border:1px solid #eee;text-align:center;font-size:11px;color:#888;width:28px">${i+1}</td>
+      <td style="padding:5px 8px;border:1px solid #eee;font-size:12px;font-weight:600;color:#1a1a1a">${x.n}</td>
+      <td style="padding:5px 8px;border:1px solid #eee;font-size:11px;font-weight:700;color:${fc};text-align:center">${statusTxt}</td>
+    </tr>`;
   });
 
   document.getElementById('capture-card').innerHTML=`
@@ -950,9 +968,16 @@ function buildCaptureCard(title, subtitle, items){
       <div class="cap-sum-item"><div class="cap-sum-val r">${rem}</div><div class="cap-sum-lbl">잔여</div></div>
       <div class="cap-sum-item"><div class="cap-sum-val">${pct}%</div><div class="cap-sum-lbl">진행률</div></div>
     </div>
-    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:5px;padding:0 2px">
-      ${cells}
-    </div>
+    <table style="width:100%;border-collapse:collapse;margin-top:4px">
+      <thead>
+        <tr style="background:#f0f0f0">
+          <th style="padding:6px;border:1px solid #ddd;font-size:11px;text-align:center">순번</th>
+          <th style="padding:6px;border:1px solid #ddd;font-size:11px;text-align:left">이름</th>
+          <th style="padding:6px;border:1px solid #ddd;font-size:11px;text-align:center">완료여부</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>
     <div class="cap-footer">📋 조사건 관리 앱</div>
   `;
   document.getElementById('capture-ov').classList.add('on');
