@@ -948,12 +948,14 @@ function buildCaptureCard(title, subtitle, items){
   sorted.forEach((x,i)=>{
     const doneCnt=x.s==='done'?(+x.c||0):typeof x.doneCnt==='number'?x.doneCnt:0;
     const bg = x.s==='done'?'#e8f5e9':x.s==='partial'?'#fffde7':'#ffffff';
-    const fc = x.s==='done'?'#1D9E75':x.s==='partial'?'#f57f17':'#444';
-    const statusTxt = x.s==='done'?'✓ 완료':x.s==='partial'?`${doneCnt}/${x.c}건 완료`:'진행중';
+    const fc = x.s==='done'?'#1D9E75':x.s==='partial'?'#f57f17':'#888';
+    const statusTxt = x.s==='done'?'✓ 완료':x.s==='partial'?`${doneCnt}/${x.c}건`:'진행중';
+    const dateDisp = x.d?(x.d.includes('-')?x.d.slice(5).replace('-','/'):x.d):'미정';
     rows+=`<tr style="background:${bg}">
-      <td style="padding:5px 6px;border:1px solid #eee;text-align:center;font-size:11px;color:#888;width:28px">${i+1}</td>
-      <td style="padding:5px 8px;border:1px solid #eee;font-size:12px;font-weight:600;color:#1a1a1a">${x.n}</td>
-      <td style="padding:5px 8px;border:1px solid #eee;font-size:11px;font-weight:700;color:${fc};text-align:center">${statusTxt}</td>
+      <td style="padding:4px 5px;border:1px solid #eee;font-size:11px;color:#888;white-space:nowrap">${i+1}. ${x.n}</td>
+      <td style="padding:4px 5px;border:1px solid #eee;font-size:11px;color:#555;text-align:center;white-space:nowrap">${x.c}건</td>
+      <td style="padding:4px 5px;border:1px solid #eee;font-size:11px;color:#555;text-align:center;white-space:nowrap">${dateDisp}</td>
+      <td style="padding:4px 5px;border:1px solid #eee;font-size:11px;font-weight:700;color:${fc};text-align:center;white-space:nowrap">${statusTxt}</td>
     </tr>`;
   });
 
@@ -968,12 +970,13 @@ function buildCaptureCard(title, subtitle, items){
       <div class="cap-sum-item"><div class="cap-sum-val r">${rem}</div><div class="cap-sum-lbl">잔여</div></div>
       <div class="cap-sum-item"><div class="cap-sum-val">${pct}%</div><div class="cap-sum-lbl">진행률</div></div>
     </div>
-    <table style="width:100%;border-collapse:collapse;margin-top:4px">
+    <table style="width:100%;border-collapse:collapse;margin-top:6px">
       <thead>
         <tr style="background:#f0f0f0">
-          <th style="padding:6px;border:1px solid #ddd;font-size:11px;text-align:center">순번</th>
-          <th style="padding:6px;border:1px solid #ddd;font-size:11px;text-align:left">이름</th>
-          <th style="padding:6px;border:1px solid #ddd;font-size:11px;text-align:center">완료여부</th>
+          <th style="padding:5px 6px;border:1px solid #ddd;font-size:10px;text-align:left">순번·이름</th>
+          <th style="padding:5px 4px;border:1px solid #ddd;font-size:10px;text-align:center">건수</th>
+          <th style="padding:5px 4px;border:1px solid #ddd;font-size:10px;text-align:center">수확예정일</th>
+          <th style="padding:5px 4px;border:1px solid #ddd;font-size:10px;text-align:center">완료여부</th>
         </tr>
       </thead>
       <tbody>${rows}</tbody>
