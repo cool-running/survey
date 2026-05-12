@@ -78,8 +78,9 @@ body{font-family:-apple-system,'Noto Sans KR',sans-serif;background:var(--bg);co
 .r-main{flex:1;min-width:0}
 .r-name{font-size:15px;font-weight:600;letter-spacing:-.02em}
 .r-memo{font-size:11px;color:var(--hint);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.memo-badge{display:inline-block;font-size:10px;font-weight:700;background:#fff0f0;color:#E53935;border:1px solid #ffcdd2;border-radius:6px;padding:1px 6px;margin-top:3px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .r-cnt{font-size:12px;color:var(--sub);min-width:28px;text-align:right;flex-shrink:0}
-.r-date{font-size:12px;color:var(--sub);min-width:52px;text-align:right;flex-shrink:0}
+.r-date{font-size:12px;color:var(--sub);min-width:60px;text-align:right;flex-shrink:0}
 .empty{text-align:center;padding:60px 20px;color:var(--hint);font-size:13px}
 
 /* ── FAB ── */
@@ -199,17 +200,8 @@ body{font-family:-apple-system,'Noto Sans KR',sans-serif;background:var(--bg);co
   <div class="sh-title" id="is-title">계약자 추가</div>
   <div class="fld"><label>계약자 이름</label><input type="text" id="i-name" placeholder="이름" autocomplete="off"></div>
   <div class="two-col">
-    <div class="fld"><label>수확일</label>
-      <select id="i-date">
-        <option value="">선택</option>
-        <option>14일</option><option>15일</option><option>16일</option>
-        <option>18일</option><option>19일</option><option>20일</option>
-        <option>20일 이후</option><option>21일</option><option>22일</option>
-        <option>23일</option><option>24일</option><option>25일</option>
-        <option>26일</option><option>27일</option><option>28일</option>
-        <option>29일</option><option>30일</option><option>5월말</option>
-        <option>미정</option>
-      </select>
+    <div class="fld"><label>수확예정일</label>
+      <input type="date" id="i-date" style="color-scheme:light">
     </div>
     <div class="fld"><label>조사건수</label><input type="number" id="i-cnt" placeholder="건수" min="0" inputmode="numeric"></div>
   </div>
@@ -260,8 +252,10 @@ function save(){localStorage.setItem(KEY,JSON.stringify(db));}
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,5);}
 
 // ══ 날짜 정렬 ══
-const DORD=['14일','15일','16일','18일','19일','20일','20일 이후','21일','22일','23일','24일','25일','26일','27일','28일','29일','30일','5월말','미정'];
-const dk=d=>{const i=DORD.indexOf(d);return i<0?99:i;};
+const dk=d=>{
+  if(!d) return '9999';
+  return d; // YYYY-MM-DD 형식은 문자열 정렬로 자동 날짜순
+};
 
 // ══ 이모지 ══
 const EMOJI={마늘:'🧄',감자:'🥔',인삼:'🌿',단호박:'🎃',콩:'🫘',고구마:'🍠',양파:'🧅',고추:'🌶️',배추:'🥬',무:'🥕'};
@@ -331,18 +325,19 @@ function renderDet(){
   let html='';
   if(!fil.length){html='<div class="empty">검색 결과 없음</div>';}
   else dates.forEach(d=>{
+    const dLabel = d ? d.slice(5).replace('-','/') : '미정';
     const g=grps[d];
     const gt=g.reduce((a,x)=>a+(+x.c||0),0);
     const gd=g.filter(x=>x.s==='done').length;
-    html+=`<div class="grp-hdr"><span>${d} · ${g.length}명 / ${gt}건</span><span class="grp-bdg">완료 ${gd}</span></div>`;
+    html+=`<div class="grp-hdr"><span>${dLabel} · ${g.length}명 / ${gt}건</span><span class="grp-bdg">완료 ${gd}</span></div>`;
     g.forEach(x=>{
       const sc=x.s==='done'?'done':x.s==='fail'?'fail':'';
       const si=x.s==='done'?'✓':x.s==='fail'?'✕':'';
       html+=`<div class="row ${sc}" onclick="openItemSheet(${x._i})">
         <div class="sdot ${sc}">${si}</div>
-        <div class="r-main"><div class="r-name">${x.n}</div>${x.m?`<div class="r-memo">${x.m}</div>`:''}</div>
+        <div class="r-main"><div class="r-name">${x.n}</div>${x.m?`<div class="memo-badge">📌 ${x.m}</div>`:''}</div>
         <div class="r-cnt">${x.c}건</div>
-        <div class="r-date">${x.d||'미정'}</div>
+        <div class="r-date">${x.d?x.d.slice(5).replace('-','/'):'미정'}</div>
       </div>`;
     });
   });
