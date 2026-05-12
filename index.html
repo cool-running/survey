@@ -345,6 +345,10 @@ body{font-family:-apple-system,'Noto Sans KR',sans-serif;background:var(--bg);co
     <div class="fld"><label>조사건수</label><input type="number" id="i-cnt" placeholder="건수" min="0" inputmode="numeric"></div>
   </div>
   <div class="fld"><label>메모</label><input type="text" id="i-memo" placeholder="전화요망, 연락처 등" autocomplete="off"></div>
+  <div class="fld" id="done-date-wrap">
+    <label>조사완료일</label>
+    <input type="date" id="i-done-date" style="color-scheme:light">
+  </div>
   <div class="fld"><label>조사 상태</label></div>
   <div class="st-row">
     <div class="stb" id="sb0" onclick="pickSt('pending')">진행중</div>
@@ -744,6 +748,7 @@ function openItemSheet(idx){
     document.getElementById('i-del').style.display='none';
     document.getElementById('i-done-cnt').value='';
     document.getElementById('done-cnt-wrap').style.display='none';
+    document.getElementById('i-done-date').value='';
     pickSt('pending');
   } else {
     const x=p.items[idx];
@@ -753,9 +758,9 @@ function openItemSheet(idx){
     document.getElementById('i-cnt').value=x.c;
     document.getElementById('i-memo').value=x.m;
     document.getElementById('i-del').style.display='flex';
-    // 완료건수 설정
     const doneCnt=typeof x.doneCnt==='number'?x.doneCnt:0;
     document.getElementById('i-done-cnt').value=doneCnt>0?doneCnt:'';
+    document.getElementById('i-done-date').value=x.doneDate||'';
     pickSt(x.s);
     if(x.s==='partial'){
       document.getElementById('i-done-cnt').value=x.doneCnt||'';
@@ -803,7 +808,7 @@ function saveItem(){
   } else if(curSt2==='done'){
     doneCnt=totalCnt;
   }
-  const item={n:name,d:document.getElementById('i-date').value||'',c:totalCnt,s:finalStatus,doneCnt:doneCnt,m:(document.getElementById('i-memo').value||'').trim()};
+  const item={n:name,d:document.getElementById('i-date').value||'',c:totalCnt,s:finalStatus,doneCnt:doneCnt,doneDate:document.getElementById('i-done-date').value||'',m:(document.getElementById('i-memo').value||'').trim()};
   load();
   const p=db.projects.find(x=>x.id===curId); if(!p)return;
   if(editItemIdx===null)p.items.push(item);
@@ -951,11 +956,14 @@ function buildCaptureCard(title, subtitle, items){
     const fc = x.s==='done'?'#1D9E75':x.s==='partial'?'#f57f17':'#888';
     const statusTxt = x.s==='done'?'✓ 완료':x.s==='partial'?`${doneCnt}/${x.c}건`:'진행중';
     const dateDisp = x.d?(x.d.includes('-')?x.d.slice(5).replace('-','/'):x.d):'미정';
+    const doneDateDisp=x.doneDate?(x.doneDate.includes('-')?x.doneDate.slice(5).replace('-','/'):x.doneDate):'';
     rows+=`<tr style="background:${bg}">
-      <td style="padding:4px 5px;border:1px solid #eee;font-size:11px;color:#888;white-space:nowrap">${i+1}. ${x.n}</td>
-      <td style="padding:4px 5px;border:1px solid #eee;font-size:11px;color:#555;text-align:center;white-space:nowrap">${x.c}건</td>
-      <td style="padding:4px 5px;border:1px solid #eee;font-size:11px;color:#555;text-align:center;white-space:nowrap">${dateDisp}</td>
-      <td style="padding:4px 5px;border:1px solid #eee;font-size:11px;font-weight:700;color:${fc};text-align:center;white-space:nowrap">${statusTxt}</td>
+      <td style="padding:4px 2px;border:1px solid #eee;font-size:10px;color:#aaa;text-align:center">${i+1}</td>
+      <td style="padding:4px 3px;border:1px solid #eee;font-size:11px;font-weight:600;color:#1a1a1a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:0">${x.n}</td>
+      <td style="padding:4px 2px;border:1px solid #eee;font-size:10px;color:#555;text-align:center">${x.c}</td>
+      <td style="padding:4px 2px;border:1px solid #eee;font-size:10px;color:#555;text-align:center">${dateDisp}</td>
+      <td style="padding:4px 2px;border:1px solid #eee;font-size:10px;font-weight:700;color:${fc};text-align:center">${statusTxt}</td>
+      <td style="padding:4px 2px;border:1px solid #eee;font-size:10px;color:#1D9E75;text-align:center">${doneDateDisp}</td>
     </tr>`;
   });
 
@@ -973,10 +981,12 @@ function buildCaptureCard(title, subtitle, items){
     <table style="width:100%;border-collapse:collapse;margin-top:6px">
       <thead>
         <tr style="background:#f0f0f0">
-          <th style="padding:5px 6px;border:1px solid #ddd;font-size:10px;text-align:left">순번·이름</th>
-          <th style="padding:5px 4px;border:1px solid #ddd;font-size:10px;text-align:center">건수</th>
-          <th style="padding:5px 4px;border:1px solid #ddd;font-size:10px;text-align:center">수확예정일</th>
-          <th style="padding:5px 4px;border:1px solid #ddd;font-size:10px;text-align:center">완료여부</th>
+          <th style="padding:4px 2px;border:1px solid #ddd;font-size:9px;text-align:center;width:10%">순번</th>
+          <th style="padding:4px 3px;border:1px solid #ddd;font-size:9px;text-align:left;width:20%">이름</th>
+          <th style="padding:4px 2px;border:1px solid #ddd;font-size:9px;text-align:center;width:10%">건</th>
+          <th style="padding:4px 2px;border:1px solid #ddd;font-size:9px;text-align:center;width:20%">수확예정</th>
+          <th style="padding:4px 2px;border:1px solid #ddd;font-size:9px;text-align:center;width:20%">완료여부</th>
+          <th style="padding:4px 2px;border:1px solid #ddd;font-size:9px;text-align:center;width:20%">조사일</th>
         </tr>
       </thead>
       <tbody>${rows}</tbody>
