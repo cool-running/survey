@@ -9,6 +9,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>조사건 관리</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <link rel="manifest" href="./manifest.json">
 <link rel="apple-touch-icon" href="./icon-192.png">
 <style>
@@ -169,6 +170,32 @@ body{font-family:-apple-system,'Noto Sans KR',sans-serif;background:var(--bg);co
 .code-box{background:#f5f5f5;border-radius:var(--rs);padding:12px;font-size:11px;font-family:monospace;word-break:break-all;max-height:130px;overflow-y:auto;border:1px solid var(--border);-webkit-user-select:text;user-select:text}
 .big-btn{width:100%;padding:13px;border-radius:var(--rs);font-size:14px;font-weight:700;border:none;cursor:pointer;font-family:inherit;margin-top:10px}
 .import-ta{width:100%;height:110px;padding:10px;border:1px solid var(--border);border-radius:var(--rs);font-size:12px;font-family:monospace;resize:none;outline:none;-webkit-user-select:text;user-select:text}
+
+/* ── 캡처 출력 ── */
+.capture-ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:500;flex-direction:column;align-items:center;justify-content:center;padding:20px}
+.capture-ov.on{display:flex}
+.capture-box{background:#fff;border-radius:var(--r);width:100%;max-width:400px;overflow:hidden}
+.capture-actions{display:flex;gap:10px;margin-top:14px;width:100%;max-width:400px}
+.cap-btn{flex:1;padding:13px;border-radius:var(--rs);font-size:14px;font-weight:700;border:none;cursor:pointer;font-family:inherit}
+
+/* ── 출력용 카드 (캡처 대상) ── */
+#capture-card{background:#fff;padding:16px;font-family:-apple-system,'Noto Sans KR',sans-serif}
+.cap-header{background:var(--green);color:#fff;padding:12px 14px;border-radius:8px;margin-bottom:12px}
+.cap-h-title{font-size:15px;font-weight:700}
+.cap-h-sub{font-size:11px;opacity:.8;margin-top:2px}
+.cap-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:12px}
+.cap-sum-item{background:#f5f5f5;border-radius:6px;padding:8px 4px;text-align:center}
+.cap-sum-val{font-size:16px;font-weight:800;line-height:1}
+.cap-sum-val.g{color:var(--green)}.cap-sum-val.r{color:var(--red)}.cap-sum-val.b{color:var(--blue)}
+.cap-sum-lbl{font-size:9px;color:#666;margin-top:2px;font-weight:600}
+.cap-table{width:100%;border-collapse:collapse;font-size:12px}
+.cap-table th{background:#f0f0f0;padding:6px 8px;text-align:center;font-weight:700;border:1px solid #ddd;font-size:11px}
+.cap-table td{padding:6px 8px;border:1px solid #eee;text-align:center}
+.cap-table td:first-child{text-align:left;font-weight:600}
+.cap-table tr.done td{background:#f0faf6;color:#1D9E75}
+.cap-table tr.partial td{background:#fffde7;color:#f57f17}
+.cap-table tr.fail td{background:#fff5f5;color:#E53935}
+.cap-footer{font-size:10px;color:#aaa;text-align:right;margin-top:8px}
 </style>
 </head>
 <body>
@@ -217,7 +244,8 @@ body{font-family:-apple-system,'Noto Sans KR',sans-serif;background:var(--bg);co
       <div class="hdr-title" id="det-title">-</div>
       <div class="hdr-sub" id="det-sub">-</div>
     </div>
-    <div class="hdr-btn" onclick="openShare('proj')">⇅</div>
+    <div class="hdr-btn" onclick="captureProj()">📷</div>
+    <div class="hdr-btn" onclick="openShare('proj')" style="margin-left:4px">⇅</div>
     <div class="hdr-btn" onclick="openProjSheet('cur')" style="margin-left:4px">✎</div>
   </div>
   <div class="sumbar">
@@ -629,6 +657,9 @@ function renderList(){
         <div class="pst"><div class="pst-v g">${don}</div><div class="pst-l">완료</div></div>
         <div class="pst"><div class="pst-v r">${tot-don}</div><div class="pst-l">잔여</div></div>
         <div class="pst"><div class="pst-v">${pct}%</div><div class="pst-l">진행률</div></div>
+        <div class="pst" onclick="event.stopPropagation();captureProjById('${p.id}')" style="flex:0 0 auto;padding:0 4px">
+          <div style="width:32px;height:32px;border-radius:50%;background:#f5f5f5;display:flex;align-items:center;justify-content:center;font-size:16px">📷</div>
+        </div>
       </div>
     </div>`;
   }).join('');
@@ -868,6 +899,89 @@ function openOv(id){document.getElementById(id).classList.add('on');}
 function closeOv(id){document.getElementById(id).classList.remove('on');}
 function bgClose(id){closeOv(id);}
 
+
+// ══ 캡처 기능 ══════════════════════════════════
+function buildCaptureCard(title, subtitle, items){
+  const tot=items.reduce((a,x)=>a+(+x.c||0),0);
+  const don=items.reduce((a,x)=>a+(x.s==='done'?(+x.c||0):typeof x.doneCnt==='number'?x.doneCnt:0),0);
+  const rem=tot-don;
+  const pct=tot?Math.round(don/tot*100):0;
+  const now=new Date();
+  const dateStr=`${now.getFullYear()}.${now.getMonth()+1}.${now.getDate()} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+
+  // 5열 그리드 - 계약자명(건수) 형태
+  // 각 셀: 이름 + 건수 + 상태 색상
+  let cells='';
+  items.forEach(x=>{
+    const doneCnt=x.s==='done'?(+x.c||0):typeof x.doneCnt==='number'?x.doneCnt:0;
+    const bg = x.s==='done'?'#e8f5e9':x.s==='partial'?'#fffde7':x.s==='fail'?'#ffebee':'#f5f5f5';
+    const fc = x.s==='done'?'#1D9E75':x.s==='partial'?'#f57f17':x.s==='fail'?'#E53935':'#444';
+    const statusTxt = x.s==='done'?'완료':x.s==='partial'?`${doneCnt}/${x.c}`:x.s==='fail'?'불가':'진행';
+    cells+=`<div style="background:${bg};border-radius:5px;padding:5px 4px;text-align:center;min-width:0">
+      <div style="font-size:11px;font-weight:700;color:#1a1a1a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${x.n}</div>
+      <div style="font-size:10px;color:#666;margin-top:1px">${x.c}건</div>
+      <div style="font-size:10px;font-weight:700;color:${fc};margin-top:1px">${statusTxt}</div>
+    </div>`;
+  });
+
+  document.getElementById('capture-card').innerHTML=`
+    <div class="cap-header">
+      <div class="cap-h-title">${title}</div>
+      <div class="cap-h-sub">${subtitle?subtitle+' · ':''}${dateStr}</div>
+    </div>
+    <div class="cap-summary">
+      <div class="cap-sum-item"><div class="cap-sum-val b">${tot}</div><div class="cap-sum-lbl">조사건</div></div>
+      <div class="cap-sum-item"><div class="cap-sum-val g">${don}</div><div class="cap-sum-lbl">완료</div></div>
+      <div class="cap-sum-item"><div class="cap-sum-val r">${rem}</div><div class="cap-sum-lbl">잔여</div></div>
+      <div class="cap-sum-item"><div class="cap-sum-val">${pct}%</div><div class="cap-sum-lbl">진행률</div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:5px;padding:0 2px">
+      ${cells}
+    </div>
+    <div class="cap-footer">📋 조사건 관리 앱</div>
+  `;
+  document.getElementById('capture-ov').classList.add('on');
+}
+
+
+
+function captureProj(){
+  load();
+  const p=db.projects.find(x=>x.id===curId); if(!p)return;
+  const nm=p.branch?`${p.coop} ${p.branch}`:p.coop;
+  buildCaptureCard(`${ce(p.crop)} ${p.crop} — ${nm}`, p.insp?`조사자: ${p.insp}`:'', p.items);
+}
+function captureProjById(id){
+  load();
+  const p=db.projects.find(x=>x.id===id); if(!p)return;
+  const nm=p.branch?`${p.coop} ${p.branch}`:p.coop;
+  buildCaptureCard(`${ce(p.crop)} ${p.crop} — ${nm}`, p.insp?`조사자: ${p.insp}`:'', p.items);
+}
+
+function closeCapture(){
+  document.getElementById('capture-ov').classList.remove('on');
+}
+function closeCaptureOnBg(e){
+  if(e.target===document.getElementById('capture-ov')) closeCapture();
+}
+
+function saveCapture(){
+  const card=document.getElementById('capture-card');
+  const btn=document.querySelector('.capture-actions .cap-btn:last-child');
+  btn.textContent='저장 중...'; btn.disabled=true;
+  html2canvas(card,{scale:2,backgroundColor:'#ffffff',useCORS:true}).then(canvas=>{
+    const link=document.createElement('a');
+    const now=new Date();
+    link.download=`조사현황_${now.getMonth()+1}${now.getDate()}_${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}.png`;
+    link.href=canvas.toDataURL('image/png');
+    link.click();
+    btn.textContent='📷 이미지 저장'; btn.disabled=false;
+  }).catch(()=>{
+    alert('저장에 실패했습니다. 화면 캡처를 이용해주세요.');
+    btn.textContent='📷 이미지 저장'; btn.disabled=false;
+  });
+}
+
 // ══ 초기화 ════════════════════════════════════
 load(); renderSched();
 if('serviceWorker' in navigator){
@@ -875,5 +989,17 @@ if('serviceWorker' in navigator){
   caches.keys().then(k=>Promise.all(k.map(x=>caches.delete(x))));
 }
 </script>
+
+<!-- 캡처 출력 오버레이 -->
+<div class="capture-ov" id="capture-ov" onclick="closeCaptureOnBg(event)">
+  <div class="capture-box">
+    <div id="capture-card"><!-- 동적 생성 --></div>
+  </div>
+  <div class="capture-actions">
+    <button class="cap-btn" style="background:#f0f0f0;color:#555" onclick="closeCapture()">닫기</button>
+    <button class="cap-btn" style="background:var(--green);color:#fff" onclick="saveCapture()">📷 이미지 저장</button>
+  </div>
+</div>
+
 </body>
 </html>
