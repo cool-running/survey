@@ -143,6 +143,7 @@ body{font-family:-apple-system,'Noto Sans KR',sans-serif;background:var(--bg);co
 .stb{padding:11px 4px;border-radius:var(--rs);border:1.5px solid var(--border);text-align:center;font-size:13px;font-weight:700;cursor:pointer}
 .stb.sp{border-color:#888;background:#f5f5f5;color:#444}
 .stb.sd{border-color:var(--green);background:#e8faf3;color:var(--green)}
+.stb.sy{border-color:#f9a825;background:#fffde7;color:#f57f17}
 .stb.sf{border-color:var(--red);background:#fff5f5;color:var(--red)}
 .btn-row{display:flex;gap:8px;margin-top:6px}
 .btn{flex:1;padding:13px;border-radius:var(--rs);font-size:15px;font-weight:700;border:none;cursor:pointer;font-family:inherit}
@@ -346,12 +347,12 @@ body{font-family:-apple-system,'Noto Sans KR',sans-serif;background:var(--bg);co
   <div class="fld"><label>조사 상태</label></div>
   <div class="st-row">
     <div class="stb" id="sb0" onclick="pickSt('pending')">진행중</div>
-    <div class="stb" id="sb1" onclick="pickSt('done')">○ 완료</div>
-    <div class="stb" id="sb2" onclick="pickSt('fail')">× 전화불가</div>
+    <div class="stb" id="sb1" onclick="pickSt('partial')">△ 부분완료</div>
+    <div class="stb" id="sb2" onclick="pickSt('done')">○ 완료</div>
   </div>
   <div class="fld" id="done-cnt-wrap" style="display:none">
     <label>완료 건수 <span id="done-cnt-max" style="color:var(--sub);font-weight:400"></span></label>
-    <input type="number" id="i-done-cnt" placeholder="완료된 건수 입력" min="0" inputmode="numeric"
+    <input type="number" id="i-done-cnt" placeholder="완료 건수 입력" min="1" inputmode="numeric"
       style="width:100%;padding:11px 13px;border:1px solid var(--border);border-radius:var(--rs);font-size:15px;outline:none;-webkit-user-select:text;user-select:text;font-family:inherit">
   </div>
   <div class="btn-row">
@@ -423,10 +424,20 @@ function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.to
 
 function switchMain(i){
   document.querySelectorAll('.btab').forEach((t,j)=>t.classList.toggle('on',i===j));
-  if(i===0){show('scr-sched'); renderSched();}
-  else{show('scr-list'); renderList();}
+  if(i===0){
+    localStorage.setItem('last_screen','sched');
+    localStorage.removeItem('last_proj_id');
+    show('scr-sched'); renderSched();
+  } else {
+    localStorage.setItem('last_screen','list');
+    show('scr-list'); renderList();
+  }
 }
-function goProjects(){switchMain(1);}
+function goProjects(){
+  localStorage.setItem('last_screen','list');
+  localStorage.removeItem('last_proj_id');
+  switchMain(1);
+}
 
 // ══ 조사 일정 화면 ══════════════════════════════
 function switchDay(i){
@@ -668,6 +679,8 @@ function renderList(){
 // ══ 프로젝트 상세 ══════════════════════════════
 function openProj(id){
   load(); curId=id;
+  localStorage.setItem('last_screen','proj');
+  localStorage.setItem('last_proj_id',id);
   const p=db.projects.find(x=>x.id===id); if(!p)return;
   const nm=p.branch?`${p.coop} ${p.branch}`:p.coop;
   document.getElementById('det-title').textContent=`${ce(p.crop)} ${p.crop} — ${nm}`;
@@ -738,6 +751,9 @@ function openItemSheet(idx){
     const doneCnt=typeof x.doneCnt==='number'?x.doneCnt:0;
     document.getElementById('i-done-cnt').value=doneCnt>0?doneCnt:'';
     pickSt(x.s);
+    if(x.s==='partial'){
+      document.getElementById('i-done-cnt').value=x.doneCnt||'';
+    }
   }
   openOv('ov-item');
   setTimeout(()=>document.getElementById('i-name').focus(),300);
@@ -745,15 +761,15 @@ function openItemSheet(idx){
 function pickSt(s){
   curSt2=s;
   document.getElementById('sb0').className='stb'+(s==='pending'?' sp':'');
-  document.getElementById('sb1').className='stb'+(s==='done'?   ' sd':'');
-  document.getElementById('sb2').className='stb'+(s==='fail'?   ' sf':'');
-  // 완료 선택 시 완료건수 필드 표시
+  document.getElementById('sb1').className='stb'+(s==='partial'?' sy':'');
+  document.getElementById('sb2').className='stb'+(s==='done'?   ' sd':'');
+  // 부분완료 선택 시 완료건수 입력란 표시
   const totalCnt=parseInt(document.getElementById('i-cnt').value)||0;
   const wrap=document.getElementById('done-cnt-wrap');
-  if(s==='done' && totalCnt>1){
+  if(s==='partial'){
     wrap.style.display='';
     document.getElementById('done-cnt-max').textContent=`(전체 ${totalCnt}건 중)`;
-    document.getElementById('i-done-cnt').max=totalCnt;
+    document.getElementById('i-done-cnt').max=totalCnt-1;
   } else {
     wrap.style.display='none';
   }
@@ -763,21 +779,14 @@ function saveItem(){
   if(!name){alert('이름을 입력하세요');return;}
   const totalCnt=parseInt(document.getElementById('i-cnt').value)||0;
   const doneCntInput=parseInt(document.getElementById('i-done-cnt').value)||0;
-  // 완료건수 결정
   let doneCnt=0;
   let finalStatus=curSt2;
-  if(curSt2==='done'){
-    if(totalCnt>1 && doneCntInput>0 && doneCntInput<totalCnt){
-      // 부분완료
-      doneCnt=doneCntInput;
-      finalStatus='partial';
-    } else {
-      // 전체완료
-      doneCnt=totalCnt;
-      finalStatus='done';
-    }
-  } else if(curSt2==='partial'){
+  if(curSt2==='partial'){
+    if(!doneCntInput||doneCntInput<=0){alert('완료 건수를 입력하세요');return;}
+    if(doneCntInput>=totalCnt){alert('전체 완료면 ○완료를 선택하세요');return;}
     doneCnt=doneCntInput;
+  } else if(curSt2==='done'){
+    doneCnt=totalCnt;
   }
   const item={n:name,d:document.getElementById('i-date').value||'',c:totalCnt,s:finalStatus,doneCnt:doneCnt,m:(document.getElementById('i-memo').value||'').trim()};
   load();
@@ -983,7 +992,29 @@ function saveCapture(){
 }
 
 // ══ 초기화 ════════════════════════════════════
-load(); renderSched();
+load();
+
+// 마지막 화면 상태 복원
+(function restoreLastScreen(){
+  const lastScreen = localStorage.getItem('last_screen');
+  const lastProjId = localStorage.getItem('last_proj_id');
+  const lastTab    = parseInt(localStorage.getItem('last_main_tab')||'0');
+
+  if(lastScreen==='proj' && lastProjId){
+    // 프로젝트 상세 복원
+    switchMain(1); // 조사관리 탭 활성
+    const p=db.projects.find(x=>x.id===lastProjId);
+    if(p){ curId=lastProjId; openProj(lastProjId); return; }
+  }
+  if(lastScreen==='list'){
+    switchMain(1);
+    renderList();
+    return;
+  }
+  // 기본: 조사일정
+  switchMain(0);
+})();
+
 if('serviceWorker' in navigator){
   navigator.serviceWorker.getRegistrations().then(r=>r.forEach(x=>x.unregister()));
   caches.keys().then(k=>Promise.all(k.map(x=>caches.delete(x))));
