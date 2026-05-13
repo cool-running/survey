@@ -469,9 +469,13 @@ function renderSched(){
     const dayNames=['일','월','화','수','목','금','토'];
     const label=`${['오늘','내일','모레'][d]}<br><span style="font-size:10px;opacity:.8">${dd.getMonth()+1}/${dd.getDate()}(${dayNames[dd.getDay()]})</span>`;
     document.getElementById(`dtab${d}-label`).innerHTML=label;
-    const cnt=schedules.filter(s=>s.day===d).length;
-    document.getElementById(`dcnt${d}`).textContent=cnt;
-    document.getElementById(`dcnt${d}`).style.display=cnt?'inline-block':'none';
+    const dayCnt=schedules.filter(s=>s.day===d).reduce((a,s)=>{
+      const p=db.projects.find(x=>x.id===s.projId);
+      const c=p&&p.items[s.itemIdx]?(s.cnt||p.items[s.itemIdx].c||0):0;
+      return a+c;
+    },0);
+    document.getElementById(`dcnt${d}`).textContent=dayCnt+'건';
+    document.getElementById(`dcnt${d}`).style.display=dayCnt?'inline-block':'none';
   });
 
   // 현재 탭의 일정
@@ -496,7 +500,7 @@ function renderSched(){
     if(s.checked) don+=schedCnt;
   });
   sumEl.innerHTML=`<div class="day-summary">
-    <div class="day-sum-card"><div class="day-sum-val b">${daySched.length}</div><div class="day-sum-lbl">계약자</div></div>
+    <div class="day-sum-card"><div class="day-sum-val b">${daySched.length}명</div><div class="day-sum-lbl">계약자</div></div>
     <div class="day-sum-card"><div class="day-sum-val b">${tot}</div><div class="day-sum-lbl">조사건</div></div>
     <div class="day-sum-card"><div class="day-sum-val g">${don}</div><div class="day-sum-lbl">완료</div></div>
     <div class="day-sum-card"><div class="day-sum-val r">${tot-don}</div><div class="day-sum-lbl">잔여</div></div>
