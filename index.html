@@ -29,8 +29,12 @@ body{font-family:-apple-system,'Noto Sans KR',sans-serif;background:var(--bg);co
 .btab-icon{font-size:22px;line-height:1.3}
 
 /* ── 화면 ── */
-.screen{display:none}
-.screen.on{display:block}
+/* ── 슬라이드 래퍼 ── */
+.screens-wrap{display:flex;width:300%;transition:transform .32s cubic-bezier(.4,0,.2,1);will-change:transform}
+.screen{width:calc(100%/3);flex-shrink:0;min-height:100vh}
+/* scr-det는 래퍼 밖 별도 레이어 */
+#scr-det{display:none;position:fixed;inset:0;background:var(--bg);z-index:250;overflow-y:auto;padding-bottom:calc(62px + env(safe-area-inset-bottom,0px))}
+#scr-det.on{display:block}
 
 /* ── 헤더 ── */
 .hdr{background:var(--green);color:#fff;padding:14px 14px 12px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:200}
@@ -281,7 +285,26 @@ body{font-family:-apple-system,'Noto Sans KR',sans-serif;background:var(--bg);co
 </head>
 <body>
 
-<!-- ══ 화면1: 조사 일정 ══ -->
+<!-- ══ 슬라이드 래퍼 ══ -->
+<div class="screens-wrap" id="screens-wrap">
+
+<!-- ══ 화면0: 조사관리 (탭0) ══ -->
+<div class="screen" id="scr-list">
+  <div class="hdr">
+    <div class="hdr-icon">📋</div>
+    <div class="hdr-text">
+      <div class="hdr-title">조사건 관리</div>
+      <div class="hdr-sub">프로젝트별 계약자 관리</div>
+    </div>
+    <div class="hdr-btn" onclick="openShare('all')">⇅</div>
+  </div>
+  <div class="proj-top">
+    <div class="new-btn" onclick="openProjSheet(null)">＋ 새 조사 프로젝트</div>
+  </div>
+  <div class="proj-list" id="proj-list"></div>
+</div>
+
+<!-- ══ 화면1: 조사 일정 (탭1) ══ -->
 <div class="screen" id="scr-sched">
   <div class="hdr">
     <div class="hdr-icon">📅</div>
@@ -337,24 +360,23 @@ body{font-family:-apple-system,'Noto Sans KR',sans-serif;background:var(--bg);co
   </div>
 </div>
 
-<!-- ══ 화면2: 조사관리 ══ -->
-<div class="screen on" id="scr-list">
+<!-- ══ 화면2: 완료내역 (탭2) ══ -->
+<div class="screen" id="scr-done">
   <div class="hdr">
-    <div class="hdr-icon">📋</div>
+    <div class="hdr-icon">✅</div>
     <div class="hdr-text">
-      <div class="hdr-title">조사건 관리</div>
-      <div class="hdr-sub">프로젝트별 계약자 관리</div>
+      <div class="hdr-title">완료내역</div>
+      <div class="hdr-sub" id="done-hdr-sub">일자별 조사 완료 목록</div>
     </div>
-    <div class="hdr-btn" onclick="openShare('all')">⇅</div>
   </div>
-  <div class="proj-top">
-    <div class="new-btn" onclick="openProjSheet(null)">＋ 새 조사 프로젝트</div>
-  </div>
-  <div class="proj-list" id="proj-list"></div>
+  <div class="done-filter-bar" id="done-filter-bar"></div>
+  <div id="done-list"></div>
 </div>
 
-<!-- ══ 화면3: 프로젝트 상세 ══ -->
-<div class="screen" id="scr-det">
+</div><!-- /screens-wrap -->
+
+<!-- ══ 프로젝트 상세 (별도 레이어) ══ -->
+<div id="scr-det">
   <div class="hdr">
     <div class="hdr-btn" onclick="goProjects()" style="font-size:22px;background:none">‹</div>
     <div class="hdr-text" style="margin-left:2px">
@@ -377,19 +399,6 @@ body{font-family:-apple-system,'Noto Sans KR',sans-serif;background:var(--bg);co
   </div>
   <div id="det-list"></div>
   <div class="fab" onclick="openItemSheet(null)">＋</div>
-</div>
-
-<!-- ══ 화면4: 완료내역 ══ -->
-<div class="screen" id="scr-done">
-  <div class="hdr">
-    <div class="hdr-icon">✅</div>
-    <div class="hdr-text">
-      <div class="hdr-title">완료내역</div>
-      <div class="hdr-sub" id="done-hdr-sub">일자별 조사 완료 목록</div>
-    </div>
-  </div>
-  <div class="done-filter-bar" id="done-filter-bar"></div>
-  <div id="done-list"></div>
 </div>
 
 <!-- ══ 하단 탭바 (3탭) ══ -->
@@ -627,20 +636,37 @@ function getSchedForDate(dateStr){
   return schedules.filter(s=>s.dateStr===dateStr);
 }
 
-// ══ 화면 전환 ══
-function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('on',s.id===id));}
+// ══ 슬라이드 탭 전환 ══
+// 탭 순서: 0=조사관리(scr-list) 1=조사일정(scr-sched) 2=완료내역(scr-done)
+let curTab=0;
+
+function show(id){
+  // scr-det는 별도 레이어
+  const det=document.getElementById('scr-det');
+  if(id==='scr-det'){det.classList.add('on');return;}
+  det.classList.remove('on');
+}
+
+function slideTo(i, animate=true){
+  const wrap=document.getElementById('screens-wrap');
+  if(!animate) wrap.style.transition='none';
+  else wrap.style.transition='transform .32s cubic-bezier(.4,0,.2,1)';
+  wrap.style.transform=`translateX(${-i*(100/3)}%)`;
+  curTab=i;
+  document.querySelectorAll('.btab').forEach((t,j)=>t.classList.toggle('on',i===j));
+}
 
 function switchMain(i){
-  document.querySelectorAll('.btab').forEach((t,j)=>t.classList.toggle('on',i===j));
+  document.getElementById('scr-det').classList.remove('on');
   if(i===0){
     localStorage.setItem('last_screen','list');
-    show('scr-list'); renderList();
+    slideTo(0); renderList();
   } else if(i===1){
     localStorage.setItem('last_screen','sched');
-    show('scr-sched'); renderCurrentView();
+    slideTo(1); renderCurrentView();
   } else {
     localStorage.setItem('last_screen','done');
-    show('scr-done'); renderDoneList();
+    slideTo(2); renderDoneList();
   }
 }
 function goProjects(){
@@ -1489,45 +1515,89 @@ load();
   const lastProjId=localStorage.getItem('last_proj_id');
   if(lastScreen==='proj'&&lastProjId){
     const p=db.projects.find(x=>x.id===lastProjId);
-    if(p){switchMain(0);curId=lastProjId;openProj(lastProjId);return;}
+    if(p){slideTo(0,false);renderList();curId=lastProjId;openProj(lastProjId);return;}
   }
-  if(lastScreen==='list'){switchMain(0);return;}
-  if(lastScreen==='sched'){switchMain(1);return;}
-  switchMain(0);
+  if(lastScreen==='sched'){slideTo(1,false);renderCurrentView();return;}
+  if(lastScreen==='done'){slideTo(2,false);renderDoneList();return;}
+  slideTo(0,false);renderList();
 })();
 
-// ══ 좌우 스와이프로 탭 전환 ══
+// ══ 좌우 스와이프 (실시간 드래그 미리보기) ══
 (function initSwipe(){
-  let sx=0, sy=0, t=0;
-  const MAIN_SCREENS=['scr-list','scr-sched','scr-done'];
-  const MIN_X=45, MAX_Y=60, MAX_MS=400;
+  let sx=0, sy=0, t=0, dragging=false, lockAxis=null;
+  const MIN_X=40, MAX_Y=55, MAX_MS=420;
+  const wrap=document.getElementById('screens-wrap');
 
-  function curTabIdx(){
-    const btabs=document.querySelectorAll('.btab');
-    for(let i=0;i<btabs.length;i++) if(btabs[i].classList.contains('on')) return i;
-    return 0;
+  function isBlocked(){
+    return !!(document.querySelector('.ov.on,.modal-ov.on,.capture-ov.on')
+      || document.getElementById('scr-det').classList.contains('on'));
   }
 
   document.addEventListener('touchstart',e=>{
-    // 오버레이·모달·시트 열려있으면 무시
-    if(document.querySelector('.ov.on,.modal-ov.on,.capture-ov.on')) return;
-    // 프로젝트 상세(scr-det) 화면이면 무시 (뒤로가기 제스처 충돌 방지)
-    if(document.getElementById('scr-det').classList.contains('on')) return;
+    if(isBlocked()) return;
     const touch=e.touches[0];
     sx=touch.clientX; sy=touch.clientY; t=Date.now();
+    dragging=false; lockAxis=null;
+  },{passive:true});
+
+  document.addEventListener('touchmove',e=>{
+    if(isBlocked()) return;
+    const touch=e.touches[0];
+    const dx=touch.clientX-sx;
+    const dy=touch.clientY-sy;
+    if(!lockAxis){
+      if(Math.abs(dx)<6&&Math.abs(dy)<6) return;
+      lockAxis=Math.abs(dx)>Math.abs(dy)?'x':'y';
+    }
+    if(lockAxis!=='x') return;
+    // 끝 탭에서 더 당기면 저항감
+    let offset=dx;
+    if((curTab===0&&dx>0)||(curTab===2&&dx<0)) offset=dx*0.18;
+    const base=-curTab*(100/3);
+    const pct=base+(offset/window.innerWidth)*100/3*3;
+    wrap.style.transition='none';
+    wrap.style.transform=`translateX(${pct}%)`;
+    dragging=true;
   },{passive:true});
 
   document.addEventListener('touchend',e=>{
-    if(document.querySelector('.ov.on,.modal-ov.on,.capture-ov.on')) return;
-    if(document.getElementById('scr-det').classList.contains('on')) return;
+    if(!dragging){return;}
+    dragging=false; lockAxis=null;
     const touch=e.changedTouches[0];
     const dx=touch.clientX-sx;
     const dy=touch.clientY-sy;
     const dt=Date.now()-t;
-    if(Math.abs(dx)<MIN_X||Math.abs(dy)>MAX_Y||dt>MAX_MS) return;
-    const cur=curTabIdx();
-    if(dx<0 && cur<2) switchMain(cur+1); // 왼쪽 스와이프 → 다음 탭
-    if(dx>0 && cur>0) switchMain(cur-1); // 오른쪽 스와이프 → 이전 탭
+    if(Math.abs(dx)>=MIN_X && Math.abs(dy)<=MAX_Y && dt<=MAX_MS){
+      if(dx<0 && curTab<2){
+        const next=curTab+1;
+        wrap.style.transition='transform .32s cubic-bezier(.4,0,.2,1)';
+        wrap.style.transform=`translateX(${-next*(100/3)}%)`;
+        curTab=next;
+        document.querySelectorAll('.btab').forEach((t,j)=>t.classList.toggle('on',next===j));
+        if(next===0) renderList();
+        else if(next===1) renderCurrentView();
+        else renderDoneList();
+        if(next===0) localStorage.setItem('last_screen','list');
+        else if(next===1) localStorage.setItem('last_screen','sched');
+        else localStorage.setItem('last_screen','done');
+      } else if(dx>0 && curTab>0){
+        const prev=curTab-1;
+        wrap.style.transition='transform .32s cubic-bezier(.4,0,.2,1)';
+        wrap.style.transform=`translateX(${-prev*(100/3)}%)`;
+        curTab=prev;
+        document.querySelectorAll('.btab').forEach((t,j)=>t.classList.toggle('on',prev===j));
+        if(prev===0) renderList();
+        else if(prev===1) renderCurrentView();
+        else renderDoneList();
+        if(prev===0) localStorage.setItem('last_screen','list');
+        else if(prev===1) localStorage.setItem('last_screen','sched');
+        else localStorage.setItem('last_screen','done');
+      } else {
+        slideTo(curTab); // 되돌리기
+      }
+    } else {
+      slideTo(curTab); // 미달이면 되돌리기
+    }
   },{passive:true});
 })();
 
