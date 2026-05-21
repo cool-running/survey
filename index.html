@@ -1496,6 +1496,41 @@ load();
   switchMain(0);
 })();
 
+// ══ 좌우 스와이프로 탭 전환 ══
+(function initSwipe(){
+  let sx=0, sy=0, t=0;
+  const MAIN_SCREENS=['scr-list','scr-sched','scr-done'];
+  const MIN_X=45, MAX_Y=60, MAX_MS=400;
+
+  function curTabIdx(){
+    const btabs=document.querySelectorAll('.btab');
+    for(let i=0;i<btabs.length;i++) if(btabs[i].classList.contains('on')) return i;
+    return 0;
+  }
+
+  document.addEventListener('touchstart',e=>{
+    // 오버레이·모달·시트 열려있으면 무시
+    if(document.querySelector('.ov.on,.modal-ov.on,.capture-ov.on')) return;
+    // 프로젝트 상세(scr-det) 화면이면 무시 (뒤로가기 제스처 충돌 방지)
+    if(document.getElementById('scr-det').classList.contains('on')) return;
+    const touch=e.touches[0];
+    sx=touch.clientX; sy=touch.clientY; t=Date.now();
+  },{passive:true});
+
+  document.addEventListener('touchend',e=>{
+    if(document.querySelector('.ov.on,.modal-ov.on,.capture-ov.on')) return;
+    if(document.getElementById('scr-det').classList.contains('on')) return;
+    const touch=e.changedTouches[0];
+    const dx=touch.clientX-sx;
+    const dy=touch.clientY-sy;
+    const dt=Date.now()-t;
+    if(Math.abs(dx)<MIN_X||Math.abs(dy)>MAX_Y||dt>MAX_MS) return;
+    const cur=curTabIdx();
+    if(dx<0 && cur<2) switchMain(cur+1); // 왼쪽 스와이프 → 다음 탭
+    if(dx>0 && cur>0) switchMain(cur-1); // 오른쪽 스와이프 → 이전 탭
+  },{passive:true});
+})();
+
 if('serviceWorker' in navigator){
   navigator.serviceWorker.getRegistrations().then(r=>r.forEach(x=>x.unregister()));
   caches.keys().then(k=>Promise.all(k.map(x=>caches.delete(x))));
