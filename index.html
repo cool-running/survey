@@ -54,9 +54,9 @@ body{font-family:-apple-system,'Noto Sans KR',sans-serif;background:var(--bg);co
 .day-nav-dow{font-size:11px;color:var(--sub);margin-top:1px}
 .day-today-btn{padding:4px 10px;border-radius:20px;background:var(--green);color:#fff;font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0}
 
-.day-summary{display:grid;grid-template-columns:repeat(4,25%);padding:6px 0 0;width:100%}
-.dscard{background:var(--card);padding:10px 4px;text-align:center;border-right:.5px solid var(--border);border-bottom:.5px solid var(--border)}
-.dscard:first-child{border-left:.5px solid var(--border)}
+.day-summary{display:grid;grid-template-columns:repeat(4,25%);width:100%;position:sticky;top:93px;z-index:90;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.dscard{background:rgba(255,255,255,.72);padding:10px 4px;text-align:center;border-right:.5px solid rgba(216,214,206,.6);border-bottom:.5px solid rgba(216,214,206,.6)}
+.dscard:first-child{border-left:.5px solid rgba(216,214,206,.6)}
 .dscard-val{font-size:17px;font-weight:800;line-height:1}
 .dscard-val.g{color:var(--green)}.dscard-val.r{color:var(--red)}.dscard-val.b{color:var(--blue)}
 .dscard-lbl{font-size:10px;color:var(--sub);margin-top:2px;font-weight:600}
