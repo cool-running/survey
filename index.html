@@ -234,6 +234,23 @@ body{font-family:-apple-system,'Noto Sans KR',sans-serif;background:var(--bg);co
 .big-btn{width:100%;padding:13px;border-radius:var(--rs);font-size:14px;font-weight:700;border:none;cursor:pointer;font-family:inherit;margin-top:10px}
 .import-ta{width:100%;height:100px;padding:10px;border:1px solid var(--border);border-radius:var(--rs);font-size:12px;font-family:monospace;resize:none;outline:none;-webkit-user-select:text;user-select:text}
 
+/* ── 중앙 팝업 모달 ── */
+.modal-ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:400;align-items:center;justify-content:center;padding:16px}
+.modal-ov.on{display:flex}
+.modal{background:var(--card);border-radius:16px;width:100%;max-width:420px;max-height:88vh;overflow-y:auto;animation:pop .2s ease;box-shadow:0 8px 32px rgba(0,0,0,.22)}
+@keyframes pop{from{transform:scale(.94);opacity:0}to{transform:scale(1);opacity:1}}
+.modal-hdr{display:flex;align-items:center;justify-content:space-between;padding:16px 16px 0}
+.modal-hdr-title{font-size:16px;font-weight:700}
+.modal-close{width:28px;height:28px;border-radius:50%;background:#f0f0f0;display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;color:#888;flex-shrink:0}
+.modal-body{padding:14px 16px 16px}
+.modal-divider{height:1px;background:var(--border);margin:10px 0}
+.modal-status-row{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:12px}
+.mstb{padding:10px 4px;border-radius:var(--rs);border:1.5px solid var(--border);text-align:center;font-size:12px;font-weight:700;cursor:pointer;transition:all .15s}
+.mstb.sp{border-color:#888;background:#f5f5f5;color:#444}
+.mstb.sd{border-color:var(--green);background:#e8faf3;color:var(--green)}
+.mstb.sy{border-color:#f9a825;background:#fffde7;color:#f57f17}
+.mstb.sf{border-color:var(--red);background:#fff5f5;color:var(--red)}
+
 /* ── 캡처 출력 ── */
 .capture-ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:500;flex-direction:column}
 .capture-ov.on{display:flex}
@@ -441,36 +458,49 @@ body{font-family:-apple-system,'Noto Sans KR',sans-serif;background:var(--bg);co
   </div>
 </div></div>
 
-<!-- ══ 시트: 계약자 ══ -->
-<div class="ov" id="ov-item" onclick="bgClose('ov-item')">
-<div class="sheet" onclick="event.stopPropagation()">
-  <div class="sh"></div>
-  <div class="sh-title" id="is-title">계약자 추가</div>
-  <div class="fld"><label>계약자 이름</label><input type="text" id="i-name" placeholder="이름" autocomplete="off"></div>
-  <div class="two-col">
-    <div class="fld"><label>수확예정일</label><input type="date" id="i-date" style="color-scheme:light"></div>
-    <div class="fld"><label>조사건수</label><input type="number" id="i-cnt" placeholder="건수" min="0" inputmode="numeric"></div>
+<!-- ══ 모달: 계약자 추가/수정 ══ -->
+<div class="modal-ov" id="ov-item" onclick="bgClose('ov-item')">
+<div class="modal" onclick="event.stopPropagation()">
+  <div class="modal-hdr">
+    <div class="modal-hdr-title" id="is-title">계약자 추가</div>
+    <div class="modal-close" onclick="closeOv('ov-item')">✕</div>
   </div>
-  <div class="fld"><label>메모</label><input type="text" id="i-memo" placeholder="전화요망, 연락처 등" autocomplete="off"></div>
-  <div class="fld" id="done-date-wrap">
-    <label>조사완료일</label>
-    <input type="date" id="i-done-date" style="color-scheme:light">
-  </div>
-  <div class="fld"><label>조사 상태</label></div>
-  <div class="st-row">
-    <div class="stb" id="sb0" onclick="pickSt('pending')">진행중</div>
-    <div class="stb" id="sb1" onclick="pickSt('partial')">△ 부분완료</div>
-    <div class="stb" id="sb2" onclick="pickSt('done')">○ 완료</div>
-  </div>
-  <div class="fld" id="done-cnt-wrap" style="display:none">
-    <label>완료 건수 <span id="done-cnt-max" style="color:var(--sub);font-weight:400"></span></label>
-    <input type="number" id="i-done-cnt" placeholder="완료 건수 입력" min="1" inputmode="numeric"
-      style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:var(--rs);font-size:15px;outline:none;-webkit-user-select:text;user-select:text;font-family:inherit">
-  </div>
-  <div class="btn-row">
-    <div class="btn btn-c" onclick="closeOv('ov-item')">취소</div>
-    <div class="btn btn-d" id="i-del" style="display:none" onclick="delItem()">삭제</div>
-    <div class="btn btn-p" onclick="saveItem()">저장</div>
+  <div class="modal-body">
+    <!-- 이름 -->
+    <div class="fld"><label>계약자 이름</label><input type="text" id="i-name" placeholder="이름" autocomplete="off"></div>
+    <!-- 수확예정일 / 조사건수 -->
+    <div class="two-col">
+      <div class="fld"><label>수확예정일</label><input type="date" id="i-date" style="color-scheme:light"></div>
+      <div class="fld"><label>조사건수</label><input type="number" id="i-cnt" placeholder="건수" min="0" inputmode="numeric"></div>
+    </div>
+    <!-- 메모 -->
+    <div class="fld"><label>메모</label><input type="text" id="i-memo" placeholder="전화요망, 연락처 등" autocomplete="off"></div>
+    <div class="modal-divider"></div>
+    <!-- 조사 상태 -->
+    <div style="font-size:12px;font-weight:700;color:var(--sub);margin-bottom:8px">조사 상태</div>
+    <div class="modal-status-row">
+      <div class="mstb" id="sb0" onclick="pickSt('pending')">진행중</div>
+      <div class="mstb" id="sb1" onclick="pickSt('partial')">△ 부분완료</div>
+      <div class="mstb" id="sb2" onclick="pickSt('done')">○ 완료</div>
+    </div>
+    <!-- 부분완료 건수 -->
+    <div class="fld" id="done-cnt-wrap" style="display:none">
+      <label>완료 건수 <span id="done-cnt-max" style="color:var(--sub);font-weight:400"></span></label>
+      <input type="number" id="i-done-cnt" placeholder="완료 건수 입력" min="1" inputmode="numeric"
+        style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:var(--rs);font-size:15px;outline:none;-webkit-user-select:text;user-select:text;font-family:inherit">
+    </div>
+    <!-- 완료일 -->
+    <div class="fld" id="done-date-wrap">
+      <label>조사완료일</label>
+      <input type="date" id="i-done-date" style="color-scheme:light">
+    </div>
+    <div class="modal-divider"></div>
+    <!-- 버튼 -->
+    <div class="btn-row" style="margin-top:10px">
+      <div class="btn btn-d" id="i-del" style="display:none" onclick="delItem()">삭제</div>
+      <div class="btn btn-c" onclick="closeOv('ov-item')">취소</div>
+      <div class="btn btn-p" onclick="saveItem()">저장</div>
+    </div>
   </div>
 </div></div>
 
@@ -1106,9 +1136,9 @@ function openItemSheet(idx){
 }
 function pickSt(s){
   curSt2=s;
-  document.getElementById('sb0').className='stb'+(s==='pending'?' sp':'');
-  document.getElementById('sb1').className='stb'+(s==='partial'?' sy':'');
-  document.getElementById('sb2').className='stb'+(s==='done'?   ' sd':'');
+  document.getElementById('sb0').className='mstb'+(s==='pending'?' sp':'');
+  document.getElementById('sb1').className='mstb'+(s==='partial'?' sy':'');
+  document.getElementById('sb2').className='mstb'+(s==='done'?   ' sd':'');
   const totalCnt=parseInt(document.getElementById('i-cnt').value)||0;
   const wrap=document.getElementById('done-cnt-wrap');
   if(s==='partial'){
