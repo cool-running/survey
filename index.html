@@ -54,8 +54,9 @@ body{font-family:-apple-system,'Noto Sans KR',sans-serif;background:var(--bg);co
 .day-nav-dow{font-size:11px;color:var(--sub);margin-top:1px}
 .day-today-btn{padding:4px 10px;border-radius:20px;background:var(--green);color:#fff;font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0}
 
-.day-summary{display:flex;gap:8px;padding:6px 14px 10px}
-.dscard{flex:1;background:var(--card);border-radius:var(--rs);padding:8px 6px;text-align:center;border:.5px solid var(--border)}
+.day-summary{display:grid;grid-template-columns:repeat(4,25%);padding:6px 0 0;width:100%}
+.dscard{background:var(--card);padding:10px 4px;text-align:center;border-right:.5px solid var(--border);border-bottom:.5px solid var(--border)}
+.dscard:first-child{border-left:.5px solid var(--border)}
 .dscard-val{font-size:17px;font-weight:800;line-height:1}
 .dscard-val.g{color:var(--green)}.dscard-val.r{color:var(--red)}.dscard-val.b{color:var(--blue)}
 .dscard-lbl{font-size:10px;color:var(--sub);margin-top:2px;font-weight:600}
@@ -693,12 +694,11 @@ function renderDayView(){
     tot+=schedCnt;
     if(s.checked) don+=schedCnt;
   });
-  sumEl.innerHTML=`<div class="day-summary">
+  sumEl.innerHTML=`
     <div class="dscard"><div class="dscard-val b">${daySched.length}</div><div class="dscard-lbl">계약자</div></div>
     <div class="dscard"><div class="dscard-val b">${tot}</div><div class="dscard-lbl">조사건</div></div>
     <div class="dscard"><div class="dscard-val g">${don}</div><div class="dscard-lbl">완료</div></div>
-    <div class="dscard"><div class="dscard-val r">${tot-don}</div><div class="dscard-lbl">잔여</div></div>
-  </div>`;
+    <div class="dscard"><div class="dscard-val r">${tot-don}</div><div class="dscard-lbl">잔여</div></div>`;
 
   let html='';
   daySched.forEach((s,si)=>{
