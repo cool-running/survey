@@ -111,7 +111,7 @@ body{font-family:-apple-system,'Noto Sans KR',sans-serif;background:var(--bg);co
 .day-banner-dow{font-size:12px;color:var(--sub);margin-top:1px}
 .day-today-btn{padding:5px 12px;border-radius:20px;background:var(--green);color:#fff;font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0}
 
-.day-summary{display:grid;grid-template-columns:repeat(4,25%);width:100%;position:sticky;top:88px;z-index:80;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.day-summary{display:grid;grid-template-columns:repeat(4,25%);width:100%;position:sticky;top:114px;z-index:80;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
 .dscard{background:rgba(255,255,255,.72);padding:10px 4px;text-align:center;border-right:.5px solid rgba(216,214,206,.6);border-bottom:.5px solid rgba(216,214,206,.6)}
 .dscard:first-child{border-left:.5px solid rgba(216,214,206,.6)}
 .dscard-val{font-size:17px;font-weight:800;line-height:1}
@@ -384,11 +384,11 @@ body{font-family:-apple-system,'Noto Sans KR',sans-serif;background:var(--bg);co
     </div>
     <div class="day-summary" id="day-summary"></div>
     <div id="sched-list"></div>
-    <!-- 완료 저장 버튼 -->
-    <div class="sched-save-bar" id="sched-save-bar">
-      <button class="sched-save-btn" onclick="saveDayDone()">✓ 완료 저장</button>
-    </div>
     <div class="add-sched-btn" onclick="openPickSheet()">＋ 조사 일정 추가</div>
+  </div>
+  <!-- 완료 저장 버튼 (view-day 밖에 위치해야 재렌더 시 안 날아감) -->
+  <div class="sched-save-bar" id="sched-save-bar">
+    <button class="sched-save-btn" onclick="saveDayDone()">✓ 완료 저장</button>
   </div>
   <div id="view-week" style="display:none">
     <div class="week-head" id="week-head"></div>
@@ -822,7 +822,7 @@ function pendingCheck(dateStr,schedIdx,key){
 // 완료 저장
 function saveDayDone(){
   load();
-  let count=0;
+  let count=0, doneNames=[];
   Object.entries(_pendingChecks).forEach(([key,checked])=>{
     const[projId,itemIdx,dateStr]=key.split(':');
     const ii=parseInt(itemIdx);
@@ -834,12 +834,14 @@ function saveDayDone(){
     if(checked&&!s.checked){
       item.doneCnt=Math.min(totalCnt,item.doneCnt+schedCnt);
       s.checked=true;
-      if(item.doneCnt>=totalCnt&&!item.doneDate)item.doneDate=dateStr;
+      // 완료일 기록 (전체 완료 여부 관계없이 체크한 날짜 기록)
+      if(!item.doneDate) item.doneDate=dateStr;
       count++;
+      doneNames.push(item.n);
     } else if(!checked&&s.checked){
       item.doneCnt=Math.max(0,item.doneCnt-schedCnt);
       s.checked=false;
-      if(item.doneCnt<totalCnt)item.doneDate='';
+      if(item.doneCnt<totalCnt) item.doneDate='';
       count++;
     }
     item.s=item.doneCnt>=totalCnt?'done':item.doneCnt>0?'partial':'pending';
@@ -847,7 +849,10 @@ function saveDayDone(){
   save();
   _pendingChecks={};
   renderDayView();
-  if(count>0) showToast(`✅ ${count}명 완료 저장됐습니다`);
+  if(count>0){
+    const names=doneNames.slice(0,2).join(', ')+(doneNames.length>2?` 외 ${doneNames.length-2}명`:'');
+    showToast(`✅ ${names} 완료 저장됐습니다`, 2500);
+  }
 }
 
 function toggleDone(dateStr,schedIdx){
@@ -1344,20 +1349,28 @@ function renderDoneList(){
   const allDone=[];
   db.projects.forEach(p=>{
     const nm=p.branch?`${p.coop} ${p.branch}`:p.coop;
-    p.items.forEach((x,i)=>{if(x.s==='done')allDone.push({name:x.n,crop:p.crop,pname:nm,insp:p.insp||'',cnt:x.c||0,doneDate:x.doneDate||'',m:x.m||'',projId:p.id,itemIdx:i});});
+    p.items.forEach((x,i)=>{
+      if(x.s==='done'||x.s==='partial'){
+        // doneDate 없으면 오늘 날짜로 채움
+        const doneDate=x.doneDate||todayStr();
+        allDone.push({name:x.n,crop:p.crop,pname:nm,insp:p.insp||'',cnt:x.c||0,doneDate,m:x.m||'',projId:p.id,itemIdx:i,isDone:x.s==='done'});
+      }
+    });
   });
-  const crops=['전체',...new Set(allDone.map(x=>x.crop))];
+  // 완료(done)만 필터
+  const onlyDone=allDone.filter(x=>x.isDone);
+  const crops=['전체',...new Set(onlyDone.map(x=>x.crop))];
   document.getElementById('done-filter-bar').innerHTML=crops.map(c=>`<div class="dfchip${doneFilterCrop===c?' on':''}" onclick="setDoneFilter('${c}')">${c==='전체'?'전체':ce(c)+' '+c}</div>`).join('');
-  const filtered=doneFilterCrop==='전체'?allDone:allDone.filter(x=>x.crop===doneFilterCrop);
+  const filtered=doneFilterCrop==='전체'?onlyDone:onlyDone.filter(x=>x.crop===doneFilterCrop);
   const listEl=document.getElementById('done-list');
   if(!filtered.length){listEl.innerHTML=`<div class="done-empty"><div class="ei">✅</div><p>완료된 조사가 없습니다</p></div>`;return;}
-  const grps={};filtered.forEach(x=>{const k=x.doneDate||'날짜미상';if(!grps[k])grps[k]=[];grps[k].push(x);});
-  const sortedDates=Object.keys(grps).sort((a,b)=>{if(a==='날짜미상')return 1;if(b==='날짜미상')return -1;return b.localeCompare(a);});
+  const grps={};filtered.forEach(x=>{if(!grps[x.doneDate])grps[x.doneDate]=[];grps[x.doneDate].push(x);});
+  const sortedDates=Object.keys(grps).sort((a,b)=>b.localeCompare(a));
   let html='';
   sortedDates.forEach(dt=>{
     const g=grps[dt];const totalCnt=g.reduce((a,x)=>a+x.cnt,0);
-    let dtLabel='날짜 미상';
-    if(dt!=='날짜미상'){const d=strToDate(dt);const lbl=getDateLabel(dt);dtLabel=`${d.getFullYear()}.${d.getMonth()+1}.${d.getDate()}(${DAY_KO[d.getDay()]})${lbl?' · '+lbl:''}`;}
+    const d=strToDate(dt);const lbl=getDateLabel(dt);
+    const dtLabel=`${d.getFullYear()}.${d.getMonth()+1}.${d.getDate()}(${DAY_KO[d.getDay()]})${lbl?' · '+lbl:''}`;
     html+=`<div class="done-date-group"><div class="done-date-hdr">📅 ${dtLabel} <span class="done-cnt-badge">${g.length}명 · ${totalCnt}건</span></div>`;
     g.forEach(x=>{html+=`<div class="done-row"><div class="done-item-icon">${ce(x.crop)}</div><div class="done-info"><div class="done-name">${x.name}</div><div class="done-meta">${ce(x.crop)} ${x.crop} · ${x.pname}${x.insp?' · '+x.insp:''}</div>${x.m?`<div class="memo-badge">📌 ${x.m}</div>`:''}</div><div class="done-cnt-val">${x.cnt}건</div></div>`;});
     html+='</div>';
