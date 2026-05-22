@@ -42,9 +42,8 @@ body{font-family:-apple-system,'Noto Sans KR',sans-serif;background:var(--bg);co
 .stab.on{color:var(--green);border-bottom-color:var(--green);background:#e8faf3}
 
 /* ── 슬라이더 ── */
-.tab-slider-wrap{overflow:clip;overflow-clip-margin:0;width:100%}
-.tab-slider{display:flex;transform:translateX(0%);transition:transform .32s cubic-bezier(.4,0,.2,1);will-change:transform}
-.tab-content{flex:0 0 100%;width:100%;box-sizing:border-box}
+.tab-pane{display:none}
+.tab-pane.on{display:block}
 
 /* ── 예정 일정 위젯 ── */
 .upcoming-wrap{background:var(--card);border-bottom:1px solid var(--border);padding:10px 14px 6px}
@@ -96,7 +95,7 @@ body{font-family:-apple-system,'Noto Sans KR',sans-serif;background:var(--bg);co
 .empty-proj p{font-size:13px;line-height:1.9}
 
 /* ══ 탭1: 조사일정 ══ */
-.view-tabs{display:flex;background:var(--card);border-bottom:1px solid var(--border);position:sticky;top:88px;z-index:90}
+.view-tabs{display:flex;background:var(--card);border-bottom:1px solid var(--border);position:sticky;top:106px;z-index:90}
 .vtab{flex:1;padding:9px 4px;text-align:center;font-size:13px;font-weight:600;color:var(--hint);border-bottom:2.5px solid transparent;cursor:pointer}
 .vtab.on{color:var(--green);border-bottom-color:var(--green)}
 /* 일 뷰 날짜 배너 */
@@ -110,7 +109,7 @@ body{font-family:-apple-system,'Noto Sans KR',sans-serif;background:var(--bg);co
 .day-banner-dow{font-size:12px;color:var(--sub);margin-top:1px}
 .day-today-btn{padding:5px 12px;border-radius:20px;background:var(--green);color:#fff;font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0}
 
-.day-summary{display:grid;grid-template-columns:repeat(4,25%);width:100%;position:sticky;top:222px;z-index:80;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.day-summary{display:grid;grid-template-columns:repeat(4,25%);width:100%;position:sticky;top:230px;z-index:80;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
 .dscard{background:rgba(255,255,255,.72);padding:10px 4px;text-align:center;border-right:.5px solid rgba(216,214,206,.6);border-bottom:.5px solid rgba(216,214,206,.6)}
 .dscard:first-child{border-left:.5px solid rgba(216,214,206,.6)}
 .dscard-val{font-size:17px;font-weight:800;line-height:1}
@@ -132,7 +131,7 @@ body{font-family:-apple-system,'Noto Sans KR',sans-serif;background:var(--bg);co
 .sched-cnt{font-size:12px;font-weight:700;color:var(--sub);flex-shrink:0;text-align:right}
 
 /* 완료 저장 버튼 */
-.sched-save-bar{display:none;position:fixed;bottom:calc(58px + env(safe-area-inset-bottom,0px));left:0;right:0;padding:10px 14px;background:rgba(255,255,255,.96);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-top:1px solid var(--border);z-index:190}
+.sched-save-bar{display:none;position:sticky;bottom:calc(58px + env(safe-area-inset-bottom,0px));padding:10px 14px;background:rgba(255,255,255,.96);backdrop-filter:blur(10px);border-top:1px solid var(--border);z-index:90}
 .sched-save-bar.on{display:block}
 .sched-save-btn{width:100%;padding:13px;background:var(--green);color:#fff;border-radius:12px;font-size:15px;font-weight:700;border:none;cursor:pointer;font-family:inherit;box-shadow:0 3px 12px rgba(29,158,117,.35)}
 
@@ -351,12 +350,9 @@ body{font-family:-apple-system,'Noto Sans KR',sans-serif;background:var(--bg);co
   <div class="stab"    id="stab2" onclick="switchMain(2)">완료</div>
 </div>
 
-<!-- ── 슬라이더 ── -->
-<div class="tab-slider-wrap">
-<div class="tab-slider" id="tab-slider">
 
 <!-- 탭0: 조사관리 -->
-<div class="tab-content" id="tab-content-0">
+<div class="tab-pane on" id="tab-pane-0">
   <div class="proj-top">
     <button class="new-btn" onclick="openProjSheet(null)">＋ 새 조사 프로젝트</button>
   </div>
@@ -364,13 +360,13 @@ body{font-family:-apple-system,'Noto Sans KR',sans-serif;background:var(--bg);co
 </div>
 
 <!-- 탭1: 조사일정 -->
-<div class="tab-content" id="tab-content-1">
+<div class="tab-pane" id="tab-pane-1">
   <div class="view-tabs" id="view-tabs-inner">
     <div class="vtab on" id="vtab0" onclick="switchView(0)">일</div>
     <div class="vtab"    id="vtab1" onclick="switchView(1)">주</div>
     <div class="vtab"    id="vtab2" onclick="switchView(2)">월</div>
   </div>
-  <div id="day-banner-outer" class="day-banner" style="position:sticky;top:132px;z-index:85;background:var(--bg)">
+  <div id="day-banner-outer" class="day-banner" style="position:sticky;top:150px;z-index:85;background:var(--bg)">
     <div class="day-banner-nav" onclick="navDay(-1)">‹</div>
     <div class="day-banner-center">
       <div class="day-banner-lbl" id="dn-lbl">오늘</div>
@@ -411,13 +407,12 @@ body{font-family:-apple-system,'Noto Sans KR',sans-serif;background:var(--bg);co
 </div>
 
 <!-- 탭2: 완료내역 -->
-<div class="tab-content" id="tab-content-2">
+<div class="tab-pane" id="tab-pane-2">
   <div class="done-toolbar" id="done-filter-bar"></div>
   <div id="done-list"></div>
 </div>
 
-</div><!-- /tab-slider -->
-</div><!-- /tab-slider-wrap -->
+
 
 <!-- ── 하단 메인 탭바 (2개) ── -->
 <div class="tab-bar">
@@ -702,9 +697,14 @@ function goCalc(){
 function switchMain(i){
   _curTab=i;
   document.querySelectorAll('.stab').forEach((t,j)=>t.classList.toggle('on',i===j));
-  const slider=document.getElementById('tab-slider');
-  slider.style.transition='transform .32s cubic-bezier(.4,0,.2,1)';
-  slider.style.transform=`translateX(${-i*100}%)`;
+  // 슬라이더 대신 show/hide
+  [0,1,2].forEach(j=>{
+    const p=document.getElementById(`tab-pane-${j}`);
+    if(p) p.classList.toggle('on',i===j);
+  });
+  // 완료 저장 버튼: 일정 탭일 때만
+  const saveBar=document.getElementById('sched-save-bar');
+  if(saveBar&&i!==1) saveBar.classList.remove('on');
   document.getElementById('scr-det').classList.remove('on');
   document.getElementById('header-sub').textContent=HEADER_SUBS[i];
   if(i===0){localStorage.setItem('last_screen','list');renderList();}
@@ -824,7 +824,7 @@ function pendingCheck(dateStr,schedIdx,key){
 // 완료 저장
 function saveDayDone(){
   load();
-  let count=0, doneNames=[];
+  let count=0, doneNames=[], cancelNames=[];
   Object.entries(_pendingChecks).forEach(([key,checked])=>{
     const[projId,itemIdx,dateStr]=key.split(':');
     const ii=parseInt(itemIdx);
@@ -833,27 +833,33 @@ function saveDayDone(){
     const p=db.projects.find(x=>x.id===projId);if(!p||!p.items[ii])return;
     const item=p.items[ii];const schedCnt=s.cnt||item.c||0;const totalCnt=item.c||0;
     if(typeof item.doneCnt!=='number')item.doneCnt=0;
+
     if(checked&&!s.checked){
+      // 완료 처리
       item.doneCnt=Math.min(totalCnt,item.doneCnt+schedCnt);
       s.checked=true;
-      // 완료일 기록 (전체 완료 여부 관계없이 체크한 날짜 기록)
       if(!item.doneDate) item.doneDate=dateStr;
-      count++;
-      doneNames.push(item.n);
+      item.s=item.doneCnt>=totalCnt?'done':'partial';
+      count++;doneNames.push(item.n);
+
     } else if(!checked&&s.checked){
+      // 완료 취소 - doneCnt, doneDate, s 모두 초기화
       item.doneCnt=Math.max(0,item.doneCnt-schedCnt);
       s.checked=false;
-      if(item.doneCnt<totalCnt) item.doneDate='';
-      count++;
+      item.doneDate='';
+      item.s=item.doneCnt>0?'partial':'pending';
+      count++;cancelNames.push(item.n);
     }
-    item.s=item.doneCnt>=totalCnt?'done':item.doneCnt>0?'partial':'pending';
   });
   save();
   _pendingChecks={};
   renderDayView();
-  if(count>0){
+  if(doneNames.length>0){
     const names=doneNames.slice(0,2).join(', ')+(doneNames.length>2?` 외 ${doneNames.length-2}명`:'');
     showToast(`✅ ${names} 완료 저장됐습니다`, 2500);
+  } else if(cancelNames.length>0){
+    const names=cancelNames.slice(0,2).join(', ')+(cancelNames.length>2?` 외 ${cancelNames.length-2}명`:'');
+    showToast(`↩ ${names} 완료 취소됐습니다`, 2500);
   }
 }
 
@@ -1352,18 +1358,15 @@ function renderDoneList(){
   db.projects.forEach(p=>{
     const nm=p.branch?`${p.coop} ${p.branch}`:p.coop;
     p.items.forEach((x,i)=>{
-      if(x.s==='done'||x.s==='partial'){
-        // doneDate 없으면 오늘 날짜로 채움
-        const doneDate=x.doneDate||todayStr();
-        allDone.push({name:x.n,crop:p.crop,pname:nm,insp:p.insp||'',cnt:x.c||0,doneDate,m:x.m||'',projId:p.id,itemIdx:i,isDone:x.s==='done'});
+      // s=done이고 doneDate가 있는 항목만 표시
+      if(x.s==='done'&&x.doneDate){
+        allDone.push({name:x.n,crop:p.crop,pname:nm,insp:p.insp||'',cnt:x.c||0,doneDate:x.doneDate,m:x.m||'',projId:p.id,itemIdx:i});
       }
     });
   });
-  // 완료(done)만 필터
-  const onlyDone=allDone.filter(x=>x.isDone);
-  const crops=['전체',...new Set(onlyDone.map(x=>x.crop))];
+  const crops=['전체',...new Set(allDone.map(x=>x.crop))];
   document.getElementById('done-filter-bar').innerHTML=crops.map(c=>`<div class="dfchip${doneFilterCrop===c?' on':''}" onclick="setDoneFilter('${c}')">${c==='전체'?'전체':ce(c)+' '+c}</div>`).join('');
-  const filtered=doneFilterCrop==='전체'?onlyDone:onlyDone.filter(x=>x.crop===doneFilterCrop);
+  const filtered=doneFilterCrop==='전체'?allDone:allDone.filter(x=>x.crop===doneFilterCrop);
   const listEl=document.getElementById('done-list');
   if(!filtered.length){listEl.innerHTML=`<div class="done-empty"><div class="ei">✅</div><p>완료된 조사가 없습니다</p></div>`;return;}
   const grps={};filtered.forEach(x=>{if(!grps[x.doneDate])grps[x.doneDate]=[];grps[x.doneDate].push(x);});
@@ -1654,14 +1657,11 @@ load();
 (function restoreLastScreen(){
   const lastScreen=localStorage.getItem('last_screen');
   const lastProjId=localStorage.getItem('last_proj_id');
-  const slider=document.getElementById('tab-slider');
   function jumpTo(i){
-    slider.style.transition='none';
-    slider.style.transform=`translateX(${-i*100}%)`;
     _curTab=i;
     document.querySelectorAll('.stab').forEach((t,j)=>t.classList.toggle('on',i===j));
+    [0,1,2].forEach(j=>{const p=document.getElementById(`tab-pane-${j}`);if(p)p.classList.toggle('on',i===j);});
     document.getElementById('header-sub').textContent=HEADER_SUBS[i];
-    requestAnimationFrame(()=>slider.style.transition='');
   }
   if(lastScreen==='proj'&&lastProjId){
     const p=db.projects.find(x=>x.id===lastProjId);
@@ -1672,20 +1672,15 @@ load();
   jumpTo(0);renderList();
 })();
 
-// ══ 스와이프 (참고 파일 고급 버전) ══
+// ══ 스와이프로 탭 전환 ══
 (function(){
   let _sx=0,_sy=0,_dragging=false,_vertLocked=false;
-  const TABS=3;
-  const getSlider=()=>document.getElementById('tab-slider');
-  function isBlocked(){return!!(document.querySelector('.ov.on,.modal-ov.on,.capture-ov.on')||document.getElementById('scr-det').classList.contains('on'));}
-
+  function isBlocked(){return!!(document.querySelector('.ov.on,.capture-ov.on')||document.getElementById('scr-det').classList.contains('on'));}
   document.addEventListener('touchstart',e=>{
     if(isBlocked())return;
     _sx=e.touches[0].clientX;_sy=e.touches[0].clientY;
     _dragging=false;_vertLocked=false;
-    getSlider().style.transition='none';
   },{passive:true});
-
   document.addEventListener('touchmove',e=>{
     if(isBlocked())return;
     const dx=e.touches[0].clientX-_sx,dy=e.touches[0].clientY-_sy;
@@ -1693,19 +1688,12 @@ load();
       if(Math.abs(dy)>Math.abs(dx)+5){_vertLocked=true;return;}
       if(Math.abs(dx)>8)_dragging=true;
     }
-    if(!_dragging||_vertLocked)return;
-    const base=-_curTab*100;let pct=(dx/window.innerWidth)*100;
-    if(_curTab===0&&dx>0)pct*=0.2;
-    if(_curTab===TABS-1&&dx<0)pct*=0.2;
-    getSlider().style.transform=`translateX(${base+pct}%)`;
   },{passive:true});
-
   document.addEventListener('touchend',e=>{
     if(!_dragging||_vertLocked){_dragging=false;return;}
     const dx=e.changedTouches[0].clientX-_sx;
-    if(dx<-50&&_curTab<TABS-1)switchMain(_curTab+1);
+    if(dx<-50&&_curTab<2)switchMain(_curTab+1);
     else if(dx>50&&_curTab>0)switchMain(_curTab-1);
-    else switchMain(_curTab);
     _dragging=false;
   },{passive:true});
 })();
