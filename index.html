@@ -38,7 +38,7 @@ body{font-family:-apple-system,'Noto Sans KR',sans-serif;background:var(--bg);co
 
 /* ── 슬라이더 ── */
 .tab-slider-wrap{overflow:hidden;width:100%}
-.tab-slider{display:flex;transition:transform .32s cubic-bezier(.4,0,.2,1);will-change:transform}
+.tab-slider{display:flex;transform:translateX(0%);transition:transform .32s cubic-bezier(.4,0,.2,1);will-change:transform}
 .tab-content{flex:0 0 100%;width:100%;box-sizing:border-box}
 
 /* ── 예정 일정 위젯 ── */
@@ -1120,13 +1120,21 @@ load();
 (function restoreLastScreen(){
   const lastScreen=localStorage.getItem('last_screen');
   const lastProjId=localStorage.getItem('last_proj_id');
+  const slider=document.getElementById('tab-slider');
+  function jumpTo(i){
+    slider.style.transition='none';
+    slider.style.transform=`translateX(${-i*100}%)`;
+    _curTab=i;
+    document.querySelectorAll('.tab').forEach((t,j)=>t.classList.toggle('on',i===j));
+    requestAnimationFrame(()=>slider.style.transition='');
+  }
   if(lastScreen==='proj'&&lastProjId){
     const p=db.projects.find(x=>x.id===lastProjId);
-    if(p){switchMain(0);renderList();openProj(lastProjId);return;}
+    if(p){jumpTo(0);renderList();openProj(lastProjId);return;}
   }
-  if(lastScreen==='sched'){switchMain(1);return;}
-  if(lastScreen==='done'){switchMain(2);return;}
-  switchMain(0);
+  if(lastScreen==='sched'){jumpTo(1);renderCurrentView();return;}
+  if(lastScreen==='done'){jumpTo(2);renderDoneList();return;}
+  jumpTo(0);renderList();
 })();
 
 // ══ 스와이프 (참고 파일 고급 버전) ══
