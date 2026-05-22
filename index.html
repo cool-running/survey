@@ -42,7 +42,7 @@ body{font-family:-apple-system,'Noto Sans KR',sans-serif;background:var(--bg);co
 .stab.on{color:var(--green);border-bottom-color:var(--green);background:#e8faf3}
 
 /* ── 슬라이더 ── */
-.tab-slider-wrap{overflow:hidden;width:100%}
+.tab-slider-wrap{overflow:clip;overflow-clip-margin:0;width:100%}
 .tab-slider{display:flex;transform:translateX(0%);transition:transform .32s cubic-bezier(.4,0,.2,1);will-change:transform}
 .tab-content{flex:0 0 100%;width:100%;box-sizing:border-box}
 
@@ -96,10 +96,9 @@ body{font-family:-apple-system,'Noto Sans KR',sans-serif;background:var(--bg);co
 .empty-proj p{font-size:13px;line-height:1.9}
 
 /* ══ 탭1: 조사일정 ══ */
-.view-tabs{display:flex;background:var(--card);border-bottom:1px solid var(--border);position:sticky;top:44px;z-index:90}
+.view-tabs{display:flex;background:var(--card);border-bottom:1px solid var(--border);position:sticky;top:88px;z-index:90}
 .vtab{flex:1;padding:9px 4px;text-align:center;font-size:13px;font-weight:600;color:var(--hint);border-bottom:2.5px solid transparent;cursor:pointer}
 .vtab.on{color:var(--green);border-bottom-color:var(--green)}
-
 /* 일 뷰 날짜 배너 */
 .day-banner{display:flex;align-items:center;padding:10px 14px 8px;gap:10px;background:var(--bg)}
 .day-banner-nav{width:34px;height:34px;border-radius:50%;background:var(--card);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:20px;cursor:pointer;flex-shrink:0}
@@ -111,7 +110,7 @@ body{font-family:-apple-system,'Noto Sans KR',sans-serif;background:var(--bg);co
 .day-banner-dow{font-size:12px;color:var(--sub);margin-top:1px}
 .day-today-btn{padding:5px 12px;border-radius:20px;background:var(--green);color:#fff;font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0}
 
-.day-summary{display:grid;grid-template-columns:repeat(4,25%);width:100%;position:sticky;top:114px;z-index:80;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.day-summary{display:grid;grid-template-columns:repeat(4,25%);width:100%;position:sticky;top:222px;z-index:80;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
 .dscard{background:rgba(255,255,255,.72);padding:10px 4px;text-align:center;border-right:.5px solid rgba(216,214,206,.6);border-bottom:.5px solid rgba(216,214,206,.6)}
 .dscard:first-child{border-left:.5px solid rgba(216,214,206,.6)}
 .dscard-val{font-size:17px;font-weight:800;line-height:1}
@@ -133,7 +132,7 @@ body{font-family:-apple-system,'Noto Sans KR',sans-serif;background:var(--bg);co
 .sched-cnt{font-size:12px;font-weight:700;color:var(--sub);flex-shrink:0;text-align:right}
 
 /* 완료 저장 버튼 */
-.sched-save-bar{display:none;position:sticky;bottom:calc(58px + env(safe-area-inset-bottom,0px));left:0;right:0;padding:10px 14px;background:rgba(255,255,255,.95);backdrop-filter:blur(8px);border-top:1px solid var(--border);z-index:85}
+.sched-save-bar{display:none;position:fixed;bottom:calc(58px + env(safe-area-inset-bottom,0px));left:0;right:0;padding:10px 14px;background:rgba(255,255,255,.96);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-top:1px solid var(--border);z-index:190}
 .sched-save-bar.on{display:block}
 .sched-save-btn{width:100%;padding:13px;background:var(--green);color:#fff;border-radius:12px;font-size:15px;font-weight:700;border:none;cursor:pointer;font-family:inherit;box-shadow:0 3px 12px rgba(29,158,117,.35)}
 
@@ -171,14 +170,14 @@ body{font-family:-apple-system,'Noto Sans KR',sans-serif;background:var(--bg);co
 .month-detail-hdr{padding:8px 14px 4px;font-size:12px;font-weight:700;color:var(--sub);background:var(--bg)}
 
 /* ══ 탭2: 완료내역 ══ */
-.done-toolbar{display:flex;gap:8px;padding:12px 14px 8px;align-items:center;background:var(--card);border-bottom:1px solid var(--border);position:sticky;top:44px;z-index:90;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.done-toolbar{display:flex;gap:8px;padding:10px 14px 8px;align-items:center;background:var(--card);border-bottom:1px solid var(--border);position:sticky;top:106px;z-index:90;overflow-x:auto;-webkit-overflow-scrolling:touch}
 .done-toolbar::-webkit-scrollbar{display:none}
 .dfchip{height:30px;padding:0 14px;border-radius:20px;border:1.5px solid var(--border);background:var(--card);color:var(--sub);font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0;display:flex;align-items:center}
 .dfchip.on{background:var(--green);border-color:var(--green);color:#fff}
 
-.done-date-group{margin-bottom:4px}
-.done-date-hdr{padding:8px 14px 4px;font-size:12px;font-weight:700;color:var(--green);display:flex;align-items:center;gap:6px;background:var(--bg)}
-.done-cnt-badge{background:#e8faf3;color:var(--green);border-radius:10px;padding:1px 7px;font-size:11px;font-weight:700;border:1px solid #a5d6c0}
+.done-date-group{margin-bottom:2px}
+.done-date-hdr{padding:10px 14px 6px;font-size:12px;font-weight:800;color:var(--green);display:flex;align-items:center;gap:6px;background:#f0faf6;border-left:3px solid var(--green);margin:8px 0 0}
+.done-cnt-badge{background:#e8faf3;color:var(--green);border-radius:10px;padding:2px 8px;font-size:11px;font-weight:700;border:1px solid #a5d6c0}
 .done-row{display:flex;align-items:center;padding:11px 14px;background:var(--card);border-bottom:1px solid #f0eeea;gap:12px;position:relative}
 .done-item-icon{width:36px;height:36px;border-radius:9px;background:#f0faf4;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
 .done-info{flex:1;min-width:0}
@@ -366,22 +365,22 @@ body{font-family:-apple-system,'Noto Sans KR',sans-serif;background:var(--bg);co
 
 <!-- 탭1: 조사일정 -->
 <div class="tab-content" id="tab-content-1">
-  <div class="view-tabs">
+  <div class="view-tabs" id="view-tabs-inner">
     <div class="vtab on" id="vtab0" onclick="switchView(0)">일</div>
-    <div class="vtab" id="vtab1" onclick="switchView(1)">주</div>
-    <div class="vtab" id="vtab2" onclick="switchView(2)">월</div>
+    <div class="vtab"    id="vtab1" onclick="switchView(1)">주</div>
+    <div class="vtab"    id="vtab2" onclick="switchView(2)">월</div>
+  </div>
+  <div id="day-banner-outer" class="day-banner" style="position:sticky;top:132px;z-index:85;background:var(--bg)">
+    <div class="day-banner-nav" onclick="navDay(-1)">‹</div>
+    <div class="day-banner-center">
+      <div class="day-banner-lbl" id="dn-lbl">오늘</div>
+      <div class="day-banner-date" id="dn-date">-</div>
+      <div class="day-banner-dow" id="dn-dow">-</div>
+    </div>
+    <div class="day-today-btn" onclick="goToday()">오늘</div>
+    <div class="day-banner-nav" onclick="navDay(1)">›</div>
   </div>
   <div id="view-day">
-    <div class="day-banner">
-      <div class="day-banner-nav" onclick="navDay(-1)">‹</div>
-      <div class="day-banner-center">
-        <div class="day-banner-lbl" id="dn-lbl">오늘</div>
-        <div class="day-banner-date" id="dn-date">-</div>
-        <div class="day-banner-dow" id="dn-dow">-</div>
-      </div>
-      <div class="day-today-btn" onclick="goToday()">오늘</div>
-      <div class="day-banner-nav" onclick="navDay(1)">›</div>
-    </div>
     <div class="day-summary" id="day-summary"></div>
     <div id="sched-list"></div>
     <div class="add-sched-btn" onclick="openPickSheet()">＋ 조사 일정 추가</div>
@@ -726,8 +725,11 @@ function switchView(i){
   document.getElementById('view-day').style.display=i===0?'':'none';
   document.getElementById('view-week').style.display=i===1?'':'none';
   document.getElementById('view-month').style.display=i===2?'':'none';
+  const banner=document.getElementById('day-banner-outer');
+  if(banner) banner.style.display=i===0?'flex':'none';
   renderCurrentView();
 }
+function _updateBanner(){} // 더미 (하위 호환용)
 function renderCurrentView(){if(curView===0)renderDayView();else if(curView===1)renderWeekView();else renderMonthView();}
 
 // ══ 토스트 ══
