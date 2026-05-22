@@ -437,13 +437,11 @@ body{font-family:-apple-system,'Noto Sans KR',sans-serif;background:var(--bg);co
     <label>품목</label>
     <div class="chip-row">
       <div class="chip" onclick="pickCrop(this,'마늘')">🧄 마늘</div>
-      <div class="chip" onclick="pickCrop(this,'감자')">🥔 감자</div>
-      <div class="chip" onclick="pickCrop(this,'인삼')">🌿 인삼</div>
-      <div class="chip" onclick="pickCrop(this,'단호박')">🎃 단호박</div>
-      <div class="chip" onclick="pickCrop(this,'콩')">🫘 콩</div>
-      <div class="chip" onclick="pickCrop(this,'고구마')">🍠 고구마</div>
       <div class="chip" onclick="pickCrop(this,'양파')">🧅 양파</div>
-      <div class="chip" onclick="pickCrop(this,'고추')">🌶️ 고추</div>
+      <div class="chip" onclick="pickCrop(this,'착과수조사')">🍇 착과수조사</div>
+      <div class="chip" onclick="pickCrop(this,'적과후착과수조사')">🍎 적과후착과수조사</div>
+      <div class="chip" onclick="pickCrop(this,'벼')">🌾 벼</div>
+      <div class="chip" onclick="pickCrop(this,'콩')">🫘 콩</div>
     </div>
     <input type="text" id="p-crop" placeholder="직접 입력" autocomplete="off">
   </div>
@@ -488,12 +486,26 @@ body{font-family:-apple-system,'Noto Sans KR',sans-serif;background:var(--bg);co
       <input type="date" id="i-done-date" style="color-scheme:light">
     </div>
     <div class="modal-divider"></div>
-    <div class="btn-row" style="margin-top:10px">
+    <!-- 이동 버튼 (수정 모드일 때만 표시) -->
+    <div id="transfer-row" style="display:none;margin-bottom:10px">
+      <div class="btn" style="width:100%;background:#f0f6ff;color:var(--blue);border:1px solid #b8d4f0;font-size:13px;padding:11px" onclick="openTransferSheet()">↗ 다른 농협으로 이동</div>
+    </div>
+    <div class="btn-row" style="margin-top:4px">
       <div class="btn btn-d" id="i-del" style="display:none" onclick="delItem()">삭제</div>
       <div class="btn btn-c" onclick="closeOv('ov-item')">취소</div>
       <div class="btn btn-p" onclick="saveItem()">저장</div>
     </div>
   </div>
+</div></div>
+
+<!-- ── 시트: 프로젝트 이동 ── -->
+<div class="ov" id="ov-transfer" onclick="bgClose('ov-transfer')">
+<div class="sheet" onclick="event.stopPropagation()">
+  <div class="sh"></div>
+  <div class="sh-title" id="transfer-title">다른 농협으로 이동</div>
+  <div style="font-size:12px;color:var(--sub);margin-bottom:12px" id="transfer-desc"></div>
+  <div id="transfer-proj-list" style="max-height:45vh;overflow-y:auto"></div>
+  <div onclick="openTransferNewProj()" style="margin-top:12px;padding:13px;background:#f0f6ff;color:var(--blue);border:1px solid #b8d4f0;border-radius:var(--r);font-size:14px;font-weight:700;text-align:center;cursor:pointer">＋ 새 프로젝트 만들어서 이동</div>
 </div></div>
 
 <!-- ── 시트: 공유 ── -->
@@ -576,7 +588,7 @@ function getDateLabel(dateStr){
 }
 const DORD=['14일','15일','16일','18일','19일','20일','20일 이후','21일','22일','23일','24일','25일','26일','27일','28일','29일','30일','5월말','미정'];
 const dk=d=>{if(!d)return'9999';if(d.includes('-'))return d;const i=DORD.indexOf(d);return i<0?'99':String(i).padStart(2,'0');};
-const ce=c=>{const m={마늘:'🧄',감자:'🥔',인삼:'🌿',단호박:'🎃',콩:'🫘',고구마:'🍠',양파:'🧅',고추:'🌶️'};return m[c]||'🌾';};
+const ce=c=>{const m={마늘:'🧄',양파:'🧅',착과수조사:'🍇',적과후착과수조사:'🍎',벼:'🌾',콩:'🫘'};return m[c]||'🌾'};
 
 function isInSched(projId,itemIdx){return schedules.some(s=>s.projId===projId&&s.itemIdx===itemIdx);}
 function getSchedForDate(dateStr){return schedules.filter(s=>s.dateStr===dateStr);}
@@ -958,7 +970,9 @@ function openItemSheet(idx){
     ['i-name','i-memo'].forEach(id=>document.getElementById(id).value='');
     ['i-date','i-done-date'].forEach(id=>document.getElementById(id).value='');
     document.getElementById('i-cnt').value='';document.getElementById('i-done-cnt').value='';
-    document.getElementById('i-del').style.display='none';document.getElementById('done-cnt-wrap').style.display='none';
+    document.getElementById('i-del').style.display='none';
+    document.getElementById('done-cnt-wrap').style.display='none';
+    document.getElementById('transfer-row').style.display='none';
     pickSt('pending');
   } else {
     const x=p.items[idx];
@@ -966,10 +980,77 @@ function openItemSheet(idx){
     document.getElementById('i-name').value=x.n;document.getElementById('i-date').value=x.d&&x.d.includes('-')?x.d:'';
     document.getElementById('i-cnt').value=x.c;document.getElementById('i-memo').value=x.m;
     document.getElementById('i-del').style.display='flex';document.getElementById('i-done-date').value=x.doneDate||'';
+    document.getElementById('transfer-row').style.display='flex';
     pickSt(x.s);if(x.s==='partial')document.getElementById('i-done-cnt').value=x.doneCnt||'';
   }
   openOv('ov-item');setTimeout(()=>document.getElementById('i-name').focus(),300);
 }
+// ══ 이동 ══
+let _transferAfterNewProj=false; // 새 프로젝트 만든 후 이동 플래그
+
+function openTransferSheet(){
+  load();
+  const p=db.projects.find(x=>x.id===curId);if(!p)return;
+  const x=p.items[editItemIdx];if(!x)return;
+  document.getElementById('transfer-title').textContent='다른 농협으로 이동';
+  document.getElementById('transfer-desc').textContent=`"${x.n}"을 이동할 프로젝트를 선택하세요`;
+  const others=db.projects.filter(q=>q.id!==curId);
+  if(!others.length){
+    document.getElementById('transfer-proj-list').innerHTML=
+      `<div style="text-align:center;padding:24px;color:var(--hint);font-size:13px">다른 프로젝트가 없습니다<br>아래 버튼으로 새로 만드세요</div>`;
+  } else {
+    document.getElementById('transfer-proj-list').innerHTML=others.map(q=>{
+      const nm=q.branch?`${q.coop} ${q.branch}`:q.coop;
+      const tot=q.items.reduce((a,i)=>a+(+i.c||0),0);
+      return `<div onclick="doTransfer('${q.id}')" style="display:flex;align-items:center;padding:12px 4px;border-bottom:1px solid #f0eeea;gap:12px;cursor:pointer">
+        <div style="font-size:26px;flex-shrink:0">${ce(q.crop)}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:14px;font-weight:700">${q.crop} — ${nm}</div>
+          <div style="font-size:11px;color:var(--sub);margin-top:2px">${q.items.length}명 · ${tot}건</div>
+        </div>
+        <div style="color:var(--green);font-size:20px;flex-shrink:0">→</div>
+      </div>`;
+    }).join('');
+  }
+  closeOv('ov-item');
+  openOv('ov-transfer');
+}
+
+function openTransferNewProj(){
+  // 새 프로젝트 시트를 열고, 저장 후 이동 처리
+  _transferAfterNewProj=true;
+  closeOv('ov-transfer');
+  // 새 프로젝트 시트 초기화
+  editProjId=null;
+  document.getElementById('ps-title').textContent='새 프로젝트 만들기';
+  ['p-crop','p-coop','p-branch','p-insp'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('p-del').style.display='none';
+  document.querySelectorAll('.chip').forEach(c=>c.classList.remove('on'));
+  openOv('ov-proj');
+  setTimeout(()=>document.getElementById('p-coop').focus(),300);
+}
+
+function doTransfer(targetId){
+  load();
+  const src=db.projects.find(x=>x.id===curId);if(!src)return;
+  const tgt=db.projects.find(x=>x.id===targetId);if(!tgt)return;
+  const item={...src.items[editItemIdx]};
+  tgt.items.push(item);
+  const newIdx=tgt.items.length-1;
+  schedules.forEach(s=>{
+    if(s.projId===curId&&s.itemIdx===editItemIdx){s.projId=targetId;s.itemIdx=newIdx;}
+  });
+  src.items.splice(editItemIdx,1);
+  schedules.forEach(s=>{
+    if(s.projId===curId&&s.itemIdx>editItemIdx) s.itemIdx--;
+  });
+  save();
+  closeOv('ov-transfer');
+  const nm=tgt.branch?`${tgt.coop} ${tgt.branch}`:tgt.coop;
+  alert(`✅ "${item.n}"을 "${nm}"으로 이동했습니다.`);
+  renderDet();
+}
+
 function pickSt(s){
   curSt2=s;
   document.getElementById('sb0').className='mstb'+(s==='pending'?' sp':'');
@@ -1022,9 +1103,22 @@ function saveProj(){
   const crop=(document.getElementById('p-crop').value||'').trim();const coop=(document.getElementById('p-coop').value||'').trim();
   if(!crop||!coop){alert('품목과 농협명을 입력하세요');return;}
   load();
-  if(editProjId){const p=db.projects.find(x=>x.id===editProjId);if(p){p.crop=crop;p.coop=coop;p.branch=(document.getElementById('p-branch').value||'').trim();p.insp=(document.getElementById('p-insp').value||'').trim();}}
-  else{db.projects.unshift({id:uid(),crop,coop,branch:(document.getElementById('p-branch').value||'').trim(),insp:(document.getElementById('p-insp').value||'').trim(),created:Date.now(),items:[]});}
-  save();closeOv('ov-proj');if(editProjId)renderDet();else renderList();
+  let newId=null;
+  if(editProjId){
+    const p=db.projects.find(x=>x.id===editProjId);
+    if(p){p.crop=crop;p.coop=coop;p.branch=(document.getElementById('p-branch').value||'').trim();p.insp=(document.getElementById('p-insp').value||'').trim();}
+  } else {
+    newId=uid();
+    db.projects.unshift({id:newId,crop,coop,branch:(document.getElementById('p-branch').value||'').trim(),insp:(document.getElementById('p-insp').value||'').trim(),created:Date.now(),items:[]});
+  }
+  save();closeOv('ov-proj');
+  // 이동 플래그 체크
+  if(_transferAfterNewProj&&newId){
+    _transferAfterNewProj=false;
+    doTransfer(newId);
+  } else {
+    if(editProjId)renderDet();else renderList();
+  }
 }
 function delProj(){
   if(!confirm('프로젝트를 삭제하시겠습니까?\n모든 데이터가 삭제됩니다.'))return;
