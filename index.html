@@ -42,8 +42,12 @@ body{font-family:-apple-system,'Noto Sans KR',sans-serif;background:var(--bg);co
 .stab.on{color:var(--green);border-bottom-color:var(--green);background:#e8faf3}
 
 /* ── 슬라이더 ── */
-.tab-pane{display:none}
+.tab-pane{display:none;animation:none}
 .tab-pane.on{display:block}
+.tab-pane.slide-in-right{animation:slideInRight .28s cubic-bezier(.4,0,.2,1)}
+.tab-pane.slide-in-left{animation:slideInLeft .28s cubic-bezier(.4,0,.2,1)}
+@keyframes slideInRight{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:translateX(0)}}
+@keyframes slideInLeft{from{opacity:0;transform:translateX(-40px)}to{opacity:1;transform:translateX(0)}}
 
 /* ── 예정 일정 위젯 ── */
 .upcoming-wrap{background:var(--card);border-bottom:1px solid var(--border);padding:10px 14px 6px}
@@ -695,14 +699,18 @@ function goCalc(){
 }
 
 function switchMain(i){
+  const prev=_curTab;
   _curTab=i;
   document.querySelectorAll('.stab').forEach((t,j)=>t.classList.toggle('on',i===j));
-  // 슬라이더 대신 show/hide
   [0,1,2].forEach(j=>{
     const p=document.getElementById(`tab-pane-${j}`);
-    if(p) p.classList.toggle('on',i===j);
+    if(!p)return;
+    p.classList.remove('on','slide-in-right','slide-in-left');
+    if(i===j){
+      p.classList.add('on');
+      p.classList.add(i>prev?'slide-in-right':'slide-in-left');
+    }
   });
-  // 완료 저장 버튼: 일정 탭일 때만
   const saveBar=document.getElementById('sched-save-bar');
   if(saveBar&&i!==1) saveBar.classList.remove('on');
   document.getElementById('scr-det').classList.remove('on');
@@ -795,6 +803,9 @@ function renderDayView(){
     const x=p.items[s.itemIdx];
     const pname=p.branch?`${p.coop} ${p.branch}`:p.coop;
     const key=`${s.projId}:${s.itemIdx}:${ds}`;
+    // item.s가 done/partial이 아니면 체크 해제 (DB와 동기화)
+    const actualChecked = s.checked && (x.s==='done'||x.s==='partial');
+    if(s.checked !== actualChecked){ s.checked=actualChecked; } // 자동 보정
     const checked=_pendingChecks.hasOwnProperty(key)?_pendingChecks[key]:s.checked;
     const rowBg=checked?'done':'';
     html+=`<div class="sched-row ${rowBg}">
