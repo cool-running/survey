@@ -301,7 +301,6 @@ body{font-family:-apple-system,'Noto Sans KR',sans-serif;background:var(--bg);co
   <div class="proj-top">
     <button class="new-btn" onclick="openProjSheet(null)">＋ 새 조사 프로젝트</button>
   </div>
-  <div class="upcoming-wrap" id="upcoming-wrap"></div>
   <div class="proj-list" id="proj-list"></div>
 </div>
 
@@ -875,7 +874,6 @@ function renderUpcoming(){
 // ══ 프로젝트 목록 ══
 function renderList(){
   load();
-  renderUpcoming();
   const el=document.getElementById('proj-list');
   if(!db.projects.length){el.innerHTML=`<div class="empty-proj"><div class="ei">📋</div><p>아직 프로젝트가 없습니다<br>위 버튼으로 새 프로젝트를 만드세요</p></div>`;return;}
   el.innerHTML=db.projects.map(p=>{
