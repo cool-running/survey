@@ -770,11 +770,12 @@ function renderDayView(){
   const sumEl=document.getElementById('day-summary');
   const listEl=document.getElementById('sched-list');
   const saveBar=document.getElementById('sched-save-bar');
+  // 항상 먼저 숨기고 시작
+  if(saveBar) saveBar.classList.remove('on');
 
   if(!daySched.length){
     sumEl.innerHTML='';
     listEl.innerHTML=`<div class="sched-empty"><div class="ei">📅</div><p>${lbl||fmtDateFull(ds)} 조사 일정이 없습니다<br>아래 버튼으로 계약자를 추가하세요</p></div>`;
-    if(saveBar) saveBar.classList.remove('on');
     return;
   }
 
