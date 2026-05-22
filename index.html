@@ -879,13 +879,15 @@ function renderDayView(){
   sumEl.innerHTML=`<div class="dscard"><div class="dscard-val b">${daySched.length}</div><div class="dscard-lbl">계약자</div></div><div class="dscard"><div class="dscard-val b">${tot}</div><div class="dscard-lbl">조사건</div></div><div class="dscard"><div class="dscard-val g">${don}</div><div class="dscard-lbl">완료</div></div><div class="dscard"><div class="dscard-val r">${tot-don}</div><div class="dscard-lbl">잔여</div></div>`;
 
   let html='';
+  let needSave=false;
   daySched.forEach((s,si)=>{
     const p=db.projects.find(x=>x.id===s.projId);if(!p||!p.items[s.itemIdx])return;
     const x=p.items[s.itemIdx];
     const pname=p.branch?`${p.coop} ${p.branch}`:p.coop;
     const key=`${s.projId}:${s.itemIdx}:${ds}`;
+    // item.s가 done/partial 아니면 s.checked도 false로 동기화 (저장 포함)
     const actualChecked = s.checked && (x.s==='done'||x.s==='partial');
-    if(s.checked !== actualChecked){ s.checked=actualChecked; }
+    if(s.checked !== actualChecked){ s.checked=actualChecked; needSave=true; }
     const checked=_pendingChecks.hasOwnProperty(key)?_pendingChecks[key]:s.checked;
     const rowBg=checked?'done':'';
     html+=`<div class="sched-row ${rowBg}" id="srow-${si}"
@@ -901,6 +903,7 @@ function renderDayView(){
       <button class="sched-del" onclick="event.stopPropagation();removeFromSched('${ds}',${si})">✕</button>
     </div>`;
   });
+  if(needSave) save(); // s.checked 불일치 보정 시 즉시 저장
   listEl.innerHTML=html;
 
   // 길게 누르기 → 날짜 변경 (모바일 500ms)
