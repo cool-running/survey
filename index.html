@@ -502,8 +502,8 @@ body{font-family:-apple-system,'Noto Sans KR',sans-serif;background:var(--bg);co
   <div class="sh"></div>
   <div class="sh-title" id="share-ttl">데이터 공유</div>
   <div class="sh-tabs">
-    <div class="sh-tab on" id="stab0" onclick="shareTab(0)">내보내기</div>
-    <div class="sh-tab" id="stab1" onclick="shareTab(1)">가져오기</div>
+    <div class="sh-tab on" id="shtab0" onclick="shareTab(0)">내보내기</div>
+    <div class="sh-tab" id="shtab1" onclick="shareTab(1)">가져오기</div>
   </div>
   <div id="s-export">
     <div style="font-size:12px;color:var(--sub);margin-bottom:8px">아래 텍스트를 복사해서 카톡 등으로 전송하세요</div>
@@ -1062,14 +1062,25 @@ function setDoneFilter(c){doneFilterCrop=c;renderDoneList();}
 
 // ══ 공유 ══
 function openShare(mode){
-  shareMode=mode;document.getElementById('share-ttl').textContent=mode==='all'?'전체 데이터 공유':'이 프로젝트 공유';
+  shareMode=mode;
+  document.getElementById('share-ttl').textContent=mode==='all'?'전체 데이터 공유':'이 프로젝트 공유';
   document.getElementById('s-paste').value='';shareTab(0);openOv('ov-share');load();
-  const data=mode==='all'?{db,schedules}:{projects:[db.projects.find(x=>x.id===curId)].filter(Boolean)};
+  let data;
+  if(mode==='all'){
+    data={db,schedules};
+  } else {
+    // 해당 프로젝트 + 관련 일정만 포함
+    const proj=db.projects.find(x=>x.id===curId);
+    const projSchedules=schedules.filter(s=>s.projId===curId);
+    data={projects:[proj].filter(Boolean),schedules:projSchedules};
+  }
   document.getElementById('s-code').textContent=JSON.stringify(data);
 }
 function shareTab(i){
-  document.getElementById('stab0').classList.toggle('on',i===0);document.getElementById('stab1').classList.toggle('on',i===1);
-  document.getElementById('s-export').style.display=i===0?'':'none';document.getElementById('s-import').style.display=i===1?'':'none';
+  document.getElementById('shtab0').classList.toggle('on',i===0);
+  document.getElementById('shtab1').classList.toggle('on',i===1);
+  document.getElementById('s-export').style.display=i===0?'':'none';
+  document.getElementById('s-import').style.display=i===1?'':'none';
 }
 function copyExport(){
   const t=document.getElementById('s-code').textContent;
