@@ -213,53 +213,87 @@ body{font-family:-apple-system,'Noto Sans KR',sans-serif;background:var(--bg);co
 .fab{position:fixed;bottom:calc(20px + env(safe-area-inset-bottom,0px));right:16px;width:50px;height:50px;background:var(--green);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:24px;box-shadow:0 4px 14px rgba(29,158,117,.4);cursor:pointer;z-index:260}
 .fab:active{transform:scale(.92)}
 
-/* ── 오버레이/시트 ── */
-.ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:400;align-items:flex-end}
+/* ── 팝업 공통 오버레이 ── */
+.ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:400;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)}
 .ov.on{display:flex}
-.sheet{background:var(--card);border-radius:18px 18px 0 0;padding:18px 16px;padding-bottom:calc(20px + env(safe-area-inset-bottom,0px));width:100%;max-height:90vh;overflow-y:auto;animation:up .22s ease}
-@keyframes up{from{transform:translateY(100%)}to{transform:translateY(0)}}
-.sh{width:36px;height:4px;background:#ddd;border-radius:2px;margin:0 auto 16px}
-.sh-title{font-size:16px;font-weight:700;margin-bottom:14px}
+
+/* ── 팝업 카드 (모든 시트 공통) ── */
+.sheet{
+  background:#fff;
+  border-radius:20px;
+  padding:22px 18px 20px;
+  padding-bottom:calc(20px + env(safe-area-inset-bottom,0px));
+  width:100%;
+  max-width:440px;
+  max-height:88vh;
+  overflow-y:auto;
+  animation:popUp .22s cubic-bezier(.34,1.56,.64,1);
+  box-shadow:0 20px 60px rgba(0,0,0,.25),0 4px 16px rgba(0,0,0,.12);
+}
+@keyframes popUp{from{transform:scale(.88) translateY(16px);opacity:0}to{transform:scale(1) translateY(0);opacity:1}}
+
+/* 팝업 상단 핸들 → X 버튼 방식으로 대체 */
+.sh{display:none}
+
+/* 팝업 헤더 */
+.sh-title{font-size:17px;font-weight:800;margin-bottom:16px;color:var(--text);letter-spacing:-.02em}
+
+/* 팝업 헤더 (아이콘 + 제목 + 닫기) */
+.popup-hdr{display:flex;align-items:center;gap:10px;margin-bottom:16px}
+.popup-hdr-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.popup-hdr-icon.green{background:#e8faf3}
+.popup-hdr-icon.blue{background:#EBF4FF}
+.popup-hdr-icon.orange{background:#fff3e0}
+.popup-hdr-title{flex:1;font-size:17px;font-weight:800;color:var(--text);letter-spacing:-.02em}
+.popup-hdr-close{width:28px;height:28px;border-radius:50%;background:#f0f0f0;display:flex;align-items:center;justify-content:center;font-size:15px;cursor:pointer;color:#888;flex-shrink:0;border:none;font-family:inherit}
+
 .fld{margin-bottom:12px}
-.fld label{display:block;font-size:12px;font-weight:600;color:var(--sub);margin-bottom:4px}
-.fld input,.fld select{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:var(--rs);font-size:15px;background:var(--card);outline:none;-webkit-user-select:text;user-select:text;-webkit-appearance:none;appearance:none;font-family:inherit}
+.fld label{display:block;font-size:12px;font-weight:700;color:var(--sub);margin-bottom:5px;letter-spacing:.02em}
+.fld input,.fld select{width:100%;padding:11px 13px;border:1.5px solid var(--border);border-radius:10px;font-size:15px;background:#fafaf8;outline:none;-webkit-user-select:text;user-select:text;-webkit-appearance:none;appearance:none;font-family:inherit;transition:border-color .15s,background .15s}
+.fld input:focus,.fld select:focus{border-color:var(--green);background:#fff}
 .fld select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23999' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:34px}
 .modal .fld label{color:#4A6FA0}
-.modal .fld input,.modal .fld select{background:rgba(255,255,255,.75);border-color:#C2D9F0}
-.modal .fld input:focus,.modal .fld select:focus{background:rgba(255,255,255,.95);border-color:#185FA5}
+.modal .fld input,.modal .fld select{background:rgba(255,255,255,.8);border-color:#C2D9F0}
+.modal .fld input:focus,.modal .fld select:focus{background:#fff;border-color:var(--blue)}
+
 .two-col{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.btn-row{display:flex;gap:8px;margin-top:6px}
-.btn{flex:1;padding:13px;border-radius:var(--rs);font-size:15px;font-weight:700;border:none;cursor:pointer;font-family:inherit}
-.btn-p{background:var(--green);color:#fff}
+.btn-row{display:flex;gap:8px;margin-top:8px}
+.btn{flex:1;padding:13px;border-radius:10px;font-size:15px;font-weight:700;border:none;cursor:pointer;font-family:inherit;transition:opacity .15s,transform .1s}
+.btn:active{opacity:.85;transform:scale(.97)}
+.btn-p{background:var(--green);color:#fff;box-shadow:0 3px 10px rgba(29,158,117,.3)}
 .btn-d{background:#fff0f0;color:var(--red);border:1px solid #ffcdd2}
 .btn-c{background:#f0f0f0;color:#555}
-.chip-row{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px}
-.chip{padding:7px 12px;border-radius:20px;border:1.5px solid var(--border);font-size:13px;font-weight:600;cursor:pointer;color:var(--sub)}
-.chip.on{border-color:var(--green);background:#e8faf3;color:var(--green)}
-.pick-item{display:flex;align-items:center;padding:10px 0;border-bottom:1px solid #f0eeea;gap:10px;cursor:pointer}
-.pick-item:active{opacity:.8}
-.pick-chk{width:22px;height:22px;border-radius:50%;border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0}
-.pick-chk.on{background:var(--green);border-color:var(--green);color:#fff}
-.sh-tabs{display:flex;border:1px solid var(--border);border-radius:var(--rs);overflow:hidden;margin-bottom:14px}
-.sh-tab{flex:1;padding:9px;text-align:center;font-size:13px;font-weight:600;cursor:pointer;color:var(--sub)}
-.sh-tab.on{background:var(--green);color:#fff}
-.code-box{background:#f5f5f5;border-radius:var(--rs);padding:10px;font-size:11px;font-family:monospace;word-break:break-all;max-height:120px;overflow-y:auto;border:1px solid var(--border);-webkit-user-select:text;user-select:text}
-.big-btn{width:100%;padding:13px;border-radius:var(--rs);font-size:14px;font-weight:700;border:none;cursor:pointer;font-family:inherit;margin-top:10px}
-.import-ta{width:100%;height:100px;padding:10px;border:1px solid var(--border);border-radius:var(--rs);font-size:12px;font-family:monospace;resize:none;outline:none;-webkit-user-select:text;user-select:text}
+.btn-blue{background:var(--blue);color:#fff;box-shadow:0 3px 10px rgba(24,95,165,.25)}
 
-/* ── 중앙 팝업 모달 ── */
-.modal-ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:400;align-items:center;justify-content:center;padding:16px}
-.modal-ov.on{display:flex}
-.modal{background:linear-gradient(160deg,#EBF4FF 0%,#F4F9FF 50%,#EDF5FF 100%);border-radius:16px;width:100%;max-width:420px;max-height:88vh;overflow-y:auto;animation:pop .2s ease;box-shadow:0 8px 32px rgba(24,95,165,.15);border:.5px solid #C2D9F0}
-@keyframes pop{from{transform:scale(.94);opacity:0}to{transform:scale(1);opacity:1}}
-.modal-hdr{display:flex;align-items:center;justify-content:space-between;padding:16px 16px 0}
-.modal-hdr-title{font-size:16px;font-weight:700;color:#0D3B6E}
-.modal-close{width:28px;height:28px;border-radius:50%;background:rgba(24,95,165,.1);display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;color:#5A7FA8;flex-shrink:0}
-.modal-body{padding:14px 16px 16px}
-.modal-divider{height:1px;background:rgba(24,95,165,.12);margin:10px 0}
+/* 섹션 구분선 */
+.popup-divider{height:1px;background:linear-gradient(to right,transparent,var(--border),transparent);margin:14px 0}
+
+/* 칩 */
+.chip-row{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:10px}
+.chip{padding:7px 13px;border-radius:20px;border:1.5px solid var(--border);font-size:13px;font-weight:600;cursor:pointer;color:var(--sub);background:#fafaf8;transition:all .15s}
+.chip:active{transform:scale(.95)}
+.chip.on{border-color:var(--green);background:#e8faf3;color:var(--green)}
+
+/* 계약자 선택 목록 */
+.pick-item{display:flex;align-items:center;padding:10px 0;border-bottom:1px solid #f5f4f0;gap:10px;cursor:pointer}
+.pick-item:active{opacity:.7}
+.pick-chk{width:22px;height:22px;border-radius:50%;border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;transition:all .15s}
+.pick-chk.on{background:var(--green);border-color:var(--green);color:#fff}
+
+/* 공유 시트 탭 */
+.sh-tabs{display:flex;background:#f0f0ee;border-radius:10px;overflow:hidden;margin-bottom:14px;padding:3px;gap:3px}
+.sh-tab{flex:1;padding:8px;text-align:center;font-size:13px;font-weight:600;cursor:pointer;color:var(--sub);border-radius:8px;transition:all .2s}
+.sh-tab.on{background:#fff;color:var(--green);box-shadow:0 1px 4px rgba(0,0,0,.1)}
+.code-box{background:#f5f5f5;border-radius:10px;padding:11px;font-size:11px;font-family:monospace;word-break:break-all;max-height:120px;overflow-y:auto;border:1px solid var(--border);-webkit-user-select:text;user-select:text}
+.big-btn{width:100%;padding:13px;border-radius:10px;font-size:14px;font-weight:700;border:none;cursor:pointer;font-family:inherit;margin-top:10px}
+.import-ta{width:100%;height:100px;padding:10px;border:1.5px solid var(--border);border-radius:10px;font-size:12px;font-family:monospace;resize:none;outline:none;-webkit-user-select:text;user-select:text}
+.import-ta:focus{border-color:var(--green)}
+
+/* ── 계약자 상태 버튼 ── */
 .modal-status-row{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:12px}
-.mstb{padding:10px 4px;border-radius:var(--rs);border:1.5px solid #C2D9F0;background:rgba(255,255,255,.6);text-align:center;font-size:12px;font-weight:700;cursor:pointer;transition:all .15s}
-.mstb.sp{border-color:#888;background:rgba(245,245,245,.85);color:#444}
+.mstb{padding:10px 4px;border-radius:10px;border:1.5px solid var(--border);background:#fafaf8;text-align:center;font-size:12px;font-weight:700;cursor:pointer;transition:all .15s;color:var(--sub)}
+.mstb:active{transform:scale(.96)}
+.mstb.sp{border-color:#888;background:#f5f5f5;color:#444}
 .mstb.sd{border-color:var(--green);background:#e8faf3;color:var(--green)}
 .mstb.sy{border-color:#f9a825;background:#fffde7;color:#f57f17}
 .mstb.sf{border-color:var(--red);background:#fff5f5;color:var(--red)}
@@ -407,34 +441,39 @@ body{font-family:-apple-system,'Noto Sans KR',sans-serif;background:var(--bg);co
   <div class="fab" onclick="openItemSheet(null)">＋</div>
 </div>
 
-<!-- ── 시트: 계약자 선택 ── -->
+<!-- ── 팝업: 조사 일정 추가 ── -->
 <div class="ov" id="ov-pick" onclick="bgClose('ov-pick')">
 <div class="sheet" onclick="event.stopPropagation()">
-  <div class="sh"></div>
-  <div class="sh-title">조사 일정 추가</div>
+  <div class="popup-hdr">
+    <div class="popup-hdr-icon green">📅</div>
+    <div class="popup-hdr-title">조사 일정 추가</div>
+    <button class="popup-hdr-close" onclick="closeOv('ov-pick')">✕</button>
+  </div>
   <div class="fld">
     <label>조사일</label>
-    <input type="date" id="pick-date-input" style="color-scheme:light;width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:var(--rs);font-size:14px;outline:none;-webkit-user-select:text;user-select:text" onchange="onPickDateChange()">
+    <input type="date" id="pick-date-input" style="color-scheme:light" onchange="onPickDateChange()">
   </div>
   <div class="fld">
-    <label>계약자 선택</label>
-    <input type="search" id="pick-q" placeholder="🔍 이름 검색" oninput="renderPickList()" autocomplete="off"
-      style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:var(--rs);font-size:14px;outline:none;-webkit-user-select:text;user-select:text;margin-bottom:8px">
+    <label>계약자 검색</label>
+    <input type="search" id="pick-q" placeholder="🔍 이름으로 검색" oninput="renderPickList()" autocomplete="off">
   </div>
-  <div id="pick-list" style="max-height:240px;overflow-y:auto"></div>
-  <div class="btn-row" style="margin-top:12px">
+  <div id="pick-list" style="max-height:240px;overflow-y:auto;margin:0 -2px"></div>
+  <div class="btn-row" style="margin-top:14px">
     <div class="btn btn-c" onclick="closeOv('ov-pick')">취소</div>
-    <div class="btn btn-p" onclick="confirmPick()">추가</div>
+    <div class="btn btn-p" onclick="confirmPick()">추가하기</div>
   </div>
 </div></div>
 
-<!-- ── 시트: 프로젝트 ── -->
+<!-- ── 팝업: 새 조사 프로젝트 ── -->
 <div class="ov" id="ov-proj" onclick="bgClose('ov-proj')">
 <div class="sheet" onclick="event.stopPropagation()">
-  <div class="sh"></div>
-  <div class="sh-title" id="ps-title">새 조사 프로젝트</div>
+  <div class="popup-hdr">
+    <div class="popup-hdr-icon green">📋</div>
+    <div class="popup-hdr-title" id="ps-title">새 조사 프로젝트</div>
+    <button class="popup-hdr-close" onclick="closeOv('ov-proj')">✕</button>
+  </div>
   <div class="fld">
-    <label>품목</label>
+    <label>품목 선택</label>
     <div class="chip-row">
       <div class="chip" onclick="pickCrop(this,'마늘')">🧄 마늘</div>
       <div class="chip" onclick="pickCrop(this,'양파')">🧅 양파</div>
@@ -446,8 +485,9 @@ body{font-family:-apple-system,'Noto Sans KR',sans-serif;background:var(--bg);co
     <input type="text" id="p-crop" placeholder="직접 입력" autocomplete="off">
   </div>
   <div class="fld"><label>농협명</label><input type="text" id="p-coop" placeholder="예) 김녕농협" autocomplete="off"></div>
-  <div class="fld"><label>지점명 (선택)</label><input type="text" id="p-branch" placeholder="예) 우도지점" autocomplete="off"></div>
+  <div class="fld"><label>지점명 <span style="color:var(--hint);font-weight:400">(선택)</span></label><input type="text" id="p-branch" placeholder="예) 우도지점" autocomplete="off"></div>
   <div class="fld"><label>조사자</label><input type="text" id="p-insp" placeholder="이름" autocomplete="off"></div>
+  <div class="popup-divider"></div>
   <div class="btn-row">
     <div class="btn btn-c" onclick="closeOv('ov-proj')">취소</div>
     <div class="btn btn-d" id="p-del" style="display:none" onclick="delProj()">삭제</div>
@@ -455,21 +495,22 @@ body{font-family:-apple-system,'Noto Sans KR',sans-serif;background:var(--bg);co
   </div>
 </div></div>
 
-<!-- ── 모달: 계약자 추가/수정 ── -->
-<div class="modal-ov" id="ov-item" onclick="bgClose('ov-item')">
-<div class="modal" onclick="event.stopPropagation()">
-  <div class="modal-hdr">
-    <div class="modal-hdr-title" id="is-title">계약자 추가</div>
-    <div class="modal-close" onclick="closeOv('ov-item')">✕</div>
+<!-- ── 팝업: 계약자 추가/수정 ── -->
+<div class="ov" id="ov-item" onclick="bgClose('ov-item')">
+<div class="sheet" onclick="event.stopPropagation()">
+  <div class="popup-hdr">
+    <div class="popup-hdr-icon green">👤</div>
+    <div class="popup-hdr-title" id="is-title">계약자 추가</div>
+    <button class="popup-hdr-close" onclick="closeOv('ov-item')">✕</button>
   </div>
-  <div class="modal-body">
+  <div style="padding:4px 0">
     <div class="fld"><label>계약자 이름</label><input type="text" id="i-name" placeholder="이름" autocomplete="off"></div>
     <div class="two-col">
       <div class="fld"><label>수확예정일</label><input type="date" id="i-date" style="color-scheme:light"></div>
       <div class="fld"><label>조사건수</label><input type="number" id="i-cnt" placeholder="건수" min="0" inputmode="numeric"></div>
     </div>
     <div class="fld"><label>메모</label><input type="text" id="i-memo" placeholder="전화요망, 연락처 등" autocomplete="off"></div>
-    <div class="modal-divider"></div>
+    <div class="popup-divider"></div>
     <div style="font-size:12px;font-weight:700;color:var(--sub);margin-bottom:8px">조사 상태</div>
     <div class="modal-status-row">
       <div class="mstb" id="sb0" onclick="pickSt('pending')">진행중</div>
@@ -485,10 +526,9 @@ body{font-family:-apple-system,'Noto Sans KR',sans-serif;background:var(--bg);co
       <label>조사완료일</label>
       <input type="date" id="i-done-date" style="color-scheme:light">
     </div>
-    <div class="modal-divider"></div>
-    <!-- 이동 버튼 (수정 모드일 때만 표시) -->
+    <div class="popup-divider"></div>
     <div id="transfer-row" style="display:none;margin-bottom:10px">
-      <div class="btn" style="width:100%;background:#f0f6ff;color:var(--blue);border:1px solid #b8d4f0;font-size:13px;padding:11px" onclick="openTransferSheet()">↗ 다른 농협으로 이동</div>
+      <div class="btn btn-blue" style="font-size:13px;padding:11px" onclick="openTransferSheet()">↗ 다른 농협으로 이동</div>
     </div>
     <div class="btn-row" style="margin-top:4px">
       <div class="btn btn-d" id="i-del" style="display:none" onclick="delItem()">삭제</div>
@@ -498,34 +538,40 @@ body{font-family:-apple-system,'Noto Sans KR',sans-serif;background:var(--bg);co
   </div>
 </div></div>
 
-<!-- ── 시트: 프로젝트 이동 ── -->
+<!-- ── 팝업: 다른 농협으로 이동 ── -->
 <div class="ov" id="ov-transfer" onclick="bgClose('ov-transfer')">
 <div class="sheet" onclick="event.stopPropagation()">
-  <div class="sh"></div>
-  <div class="sh-title" id="transfer-title">다른 농협으로 이동</div>
+  <div class="popup-hdr">
+    <div class="popup-hdr-icon orange">↗</div>
+    <div class="popup-hdr-title" id="transfer-title">다른 농협으로 이동</div>
+    <button class="popup-hdr-close" onclick="closeOv('ov-transfer')">✕</button>
+  </div>
   <div style="font-size:12px;color:var(--sub);margin-bottom:12px" id="transfer-desc"></div>
   <div id="transfer-proj-list" style="max-height:45vh;overflow-y:auto"></div>
-  <div onclick="openTransferNewProj()" style="margin-top:12px;padding:13px;background:#f0f6ff;color:var(--blue);border:1px solid #b8d4f0;border-radius:var(--r);font-size:14px;font-weight:700;text-align:center;cursor:pointer">＋ 새 프로젝트 만들어서 이동</div>
+  <div onclick="openTransferNewProj()" style="margin-top:12px;padding:13px;background:#f0f6ff;color:var(--blue);border:1.5px solid #b8d4f0;border-radius:12px;font-size:14px;font-weight:700;text-align:center;cursor:pointer;transition:opacity .15s">＋ 새 프로젝트 만들어서 이동</div>
 </div></div>
 
-<!-- ── 시트: 공유 ── -->
+<!-- ── 팝업: 데이터 공유 ── -->
 <div class="ov" id="ov-share" onclick="bgClose('ov-share')">
 <div class="sheet" onclick="event.stopPropagation()">
-  <div class="sh"></div>
-  <div class="sh-title" id="share-ttl">데이터 공유</div>
+  <div class="popup-hdr">
+    <div class="popup-hdr-icon blue">⇅</div>
+    <div class="popup-hdr-title" id="share-ttl">데이터 공유</div>
+    <button class="popup-hdr-close" onclick="closeOv('ov-share')">✕</button>
+  </div>
   <div class="sh-tabs">
-    <div class="sh-tab on" id="shtab0" onclick="shareTab(0)">내보내기</div>
-    <div class="sh-tab" id="shtab1" onclick="shareTab(1)">가져오기</div>
+    <div class="sh-tab on" id="shtab0" onclick="shareTab(0)">📤 내보내기</div>
+    <div class="sh-tab" id="shtab1" onclick="shareTab(1)">📥 가져오기</div>
   </div>
   <div id="s-export">
     <div style="font-size:12px;color:var(--sub);margin-bottom:8px">아래 텍스트를 복사해서 카톡 등으로 전송하세요</div>
     <div class="code-box" id="s-code"></div>
-    <button class="big-btn" style="background:var(--green);color:#fff" onclick="copyExport()">📋 복사하기</button>
+    <button class="big-btn" style="background:var(--green);color:#fff;border-radius:12px" onclick="copyExport()">📋 복사하기</button>
   </div>
   <div id="s-import" style="display:none">
     <div style="font-size:12px;color:var(--sub);margin-bottom:8px">받은 텍스트를 붙여넣기 하세요</div>
     <textarea class="import-ta" id="s-paste" placeholder="여기에 붙여넣기..."></textarea>
-    <button class="big-btn" style="background:var(--blue);color:#fff;margin-top:10px" onclick="doImport()">✓ 가져오기</button>
+    <button class="big-btn" style="background:var(--blue);color:#fff;border-radius:12px;margin-top:10px" onclick="doImport()">✓ 가져오기</button>
   </div>
 </div></div>
 
