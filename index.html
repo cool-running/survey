@@ -660,8 +660,16 @@ function toggleDone(dateStr,schedIdx){
   const p=db.projects.find(x=>x.id===s.projId);if(!p||!p.items[s.itemIdx])return;
   const item=p.items[s.itemIdx];const schedCnt=s.cnt||item.c||0;const totalCnt=item.c||0;
   if(typeof item.doneCnt!=='number')item.doneCnt=0;
-  if(s.checked){item.doneCnt=Math.max(0,item.doneCnt-schedCnt);s.checked=false;}
-  else{item.doneCnt=Math.min(totalCnt,item.doneCnt+schedCnt);s.checked=true;if(item.doneCnt>=totalCnt&&!item.doneDate)item.doneDate=dateStr;}
+  if(s.checked){
+    item.doneCnt=Math.max(0,item.doneCnt-schedCnt);
+    s.checked=false;
+    // 완료 해제 시 doneDate도 초기화
+    if(item.doneCnt<totalCnt) item.doneDate='';
+  } else {
+    item.doneCnt=Math.min(totalCnt,item.doneCnt+schedCnt);
+    s.checked=true;
+    if(item.doneCnt>=totalCnt&&!item.doneDate) item.doneDate=dateStr;
+  }
   item.s=item.doneCnt>=totalCnt?'done':item.doneCnt>0?'partial':'pending';
   save();renderDayView();if(curId===s.projId)renderDet();
 }
@@ -979,7 +987,9 @@ function saveItem(){
   let doneCnt=0,finalStatus=curSt2;
   if(curSt2==='partial'){if(!doneCntInput||doneCntInput<=0){alert('완료 건수를 입력하세요');return;}if(doneCntInput>=totalCnt){alert('전체 완료면 ○완료를 선택하세요');return;}doneCnt=doneCntInput;}
   else if(curSt2==='done')doneCnt=totalCnt;
-  const item={n:name,d:document.getElementById('i-date').value||'',c:totalCnt,s:finalStatus,doneCnt,doneDate:document.getElementById('i-done-date').value||'',m:(document.getElementById('i-memo').value||'').trim()};
+  // 완료 아닌 경우 doneDate 자동 초기화
+  const doneDate=curSt2==='done'?(document.getElementById('i-done-date').value||''):'';
+  const item={n:name,d:document.getElementById('i-date').value||'',c:totalCnt,s:finalStatus,doneCnt,doneDate,m:(document.getElementById('i-memo').value||'').trim()};
   load();const p=db.projects.find(x=>x.id===curId);if(!p)return;
   if(editItemIdx===null)p.items.push(item);else p.items[editItemIdx]=item;
   save();closeOv('ov-item');renderDet();
@@ -1116,6 +1126,48 @@ function saveCapture(){
     setTimeout(()=>alert('✅ 이미지가 저장되었습니다!'),500);
   }).catch(()=>{alert('저장에 실패했습니다.');btn.textContent='📷 이미지 저장';btn.disabled=false;box.style.transform=`scale(${prevZoom})`;});},100);
 }
+
+// ── 캡처 오버레이 핀치줌 ──
+(function(){
+  let _iz={scale:1,tx:0,ty:0};
+  let _drag={on:false,sx:0,sy:0,stx:0,sty:0};
+  let _pinch={on:false,startDist:0,startScale:1};
+  let _lastTap=0;
+  function dist(t){return Math.hypot(t[0].clientX-t[1].clientX,t[0].clientY-t[1].clientY);}
+  function applyT(){
+    const box=document.getElementById('capture-box');
+    if(box) box.style.transform=`translate(${_iz.tx}px,${_iz.ty}px) scale(${_iz.scale})`;
+  }
+  function resetZ(){_iz={scale:1,tx:0,ty:0};applyT();}
+  document.addEventListener('DOMContentLoaded',()=>{
+    const ov=document.getElementById('capture-ov');if(!ov)return;
+    ov.addEventListener('touchstart',e=>{
+      if(!ov.classList.contains('on'))return;
+      if(e.touches.length===1&&_iz.scale>1){_drag.on=true;_drag.sx=e.touches[0].clientX;_drag.sy=e.touches[0].clientY;_drag.stx=_iz.tx;_drag.sty=_iz.ty;}
+      if(e.touches.length===2){_drag.on=false;_pinch.on=true;_pinch.startDist=dist(e.touches);_pinch.startScale=_iz.scale;}
+      // 더블탭 리셋
+      const now=Date.now();if(now-_lastTap<280)resetZ();_lastTap=now;
+    },{passive:true});
+    ov.addEventListener('touchmove',e=>{
+      if(!ov.classList.contains('on'))return;
+      if(_drag.on&&e.touches.length===1){
+        _iz.tx=_drag.stx+(e.touches[0].clientX-_drag.sx);
+        _iz.ty=_drag.sty+(e.touches[0].clientY-_drag.sy);
+        applyT();
+      }
+      if(_pinch.on&&e.touches.length===2){
+        const ns=Math.min(4,Math.max(0.5,_pinch.startScale*(dist(e.touches)/_pinch.startDist)));
+        _iz.scale=ns;applyT();
+        // 캡처 box transform 별도 적용
+        capZoom=ns;
+      }
+    },{passive:true});
+    ov.addEventListener('touchend',e=>{
+      if(e.touches.length<2)_pinch.on=false;
+      if(e.touches.length===0){_drag.on=false;if(_iz.scale<=1)resetZ();}
+    },{passive:true});
+  });
+})();
 
 // ══ 초기화 ══
 load();
