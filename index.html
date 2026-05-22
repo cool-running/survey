@@ -96,18 +96,21 @@ body{font-family:-apple-system,'Noto Sans KR',sans-serif;background:var(--bg);co
 .empty-proj p{font-size:13px;line-height:1.9}
 
 /* ══ 탭1: 조사일정 ══ */
-/* 뷰 전환 탭 (일/주/월) */
 .view-tabs{display:flex;background:var(--card);border-bottom:1px solid var(--border);position:sticky;top:44px;z-index:90}
 .vtab{flex:1;padding:9px 4px;text-align:center;font-size:13px;font-weight:600;color:var(--hint);border-bottom:2.5px solid transparent;cursor:pointer}
 .vtab.on{color:var(--green);border-bottom-color:var(--green)}
 
-/* 일 뷰 */
-.day-nav{display:flex;align-items:center;padding:10px 14px 6px;gap:8px;background:var(--bg)}
-.day-nav-btn{width:32px;height:32px;border-radius:50%;background:var(--card);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;flex-shrink:0}
-.day-nav-center{flex:1;text-align:center}
-.day-nav-date{font-size:15px;font-weight:700;line-height:1.3}
-.day-nav-dow{font-size:11px;color:var(--sub);margin-top:1px}
-.day-today-btn{padding:4px 10px;border-radius:20px;background:var(--green);color:#fff;font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0}
+/* 일 뷰 날짜 배너 */
+.day-banner{display:flex;align-items:center;padding:10px 14px 8px;gap:10px;background:var(--bg)}
+.day-banner-nav{width:34px;height:34px;border-radius:50%;background:var(--card);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:20px;cursor:pointer;flex-shrink:0}
+.day-banner-center{flex:1;text-align:center}
+.day-banner-lbl{font-size:11px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px}
+.day-banner-lbl.past{color:var(--hint)}
+.day-banner-lbl.future{color:var(--blue)}
+.day-banner-date{font-size:20px;font-weight:800;color:var(--text);line-height:1.2;letter-spacing:-.02em}
+.day-banner-dow{font-size:12px;color:var(--sub);margin-top:1px}
+.day-today-btn{padding:5px 12px;border-radius:20px;background:var(--green);color:#fff;font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0}
+
 .day-summary{display:grid;grid-template-columns:repeat(4,25%);width:100%;position:sticky;top:88px;z-index:80;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
 .dscard{background:rgba(255,255,255,.72);padding:10px 4px;text-align:center;border-right:.5px solid rgba(216,214,206,.6);border-bottom:.5px solid rgba(216,214,206,.6)}
 .dscard:first-child{border-left:.5px solid rgba(216,214,206,.6)}
@@ -121,13 +124,22 @@ body{font-family:-apple-system,'Noto Sans KR',sans-serif;background:var(--bg);co
 .sched-row{display:flex;align-items:center;padding:11px 14px;background:var(--card);border-bottom:1px solid #f0eeea;gap:10px}
 .sched-row.done{background:#f0faf6}
 .sched-row.fail{background:#fff5f5}
-.sched-chk{width:30px;height:30px;border-radius:50%;border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;cursor:pointer}
+.sched-chk{width:30px;height:30px;border-radius:50%;border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;cursor:pointer;transition:all .2s}
 .sched-chk.done{background:var(--green);border-color:var(--green);color:#fff}
 .sched-info{flex:1;min-width:0}
 .sched-name{font-size:15px;font-weight:600}
 .sched-meta{font-size:11px;color:var(--sub);margin-top:2px}
 .memo-badge{display:inline-block;font-size:10px;font-weight:700;background:#fff0f0;color:var(--red);border:1px solid #ffcdd2;border-radius:5px;padding:1px 6px;margin-top:3px}
 .sched-cnt{font-size:12px;font-weight:700;color:var(--sub);flex-shrink:0;text-align:right}
+
+/* 완료 저장 버튼 */
+.sched-save-bar{display:none;position:sticky;bottom:calc(58px + env(safe-area-inset-bottom,0px));left:0;right:0;padding:10px 14px;background:rgba(255,255,255,.95);backdrop-filter:blur(8px);border-top:1px solid var(--border);z-index:85}
+.sched-save-bar.on{display:block}
+.sched-save-btn{width:100%;padding:13px;background:var(--green);color:#fff;border-radius:12px;font-size:15px;font-weight:700;border:none;cursor:pointer;font-family:inherit;box-shadow:0 3px 12px rgba(29,158,117,.35)}
+
+/* 토스트 */
+.toast{position:fixed;bottom:calc(70px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%) translateY(20px);background:rgba(30,30,30,.92);color:#fff;padding:10px 20px;border-radius:24px;font-size:13px;font-weight:600;white-space:nowrap;z-index:999;opacity:0;transition:opacity .25s,transform .25s;pointer-events:none}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 .sched-del{width:26px;height:26px;border-radius:50%;background:#f5f5f5;border:none;color:#aaa;font-size:13px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
 .add-sched-btn{margin:12px 14px;padding:13px;background:var(--green);color:#fff;border-radius:var(--r);font-size:14px;font-weight:700;text-align:center;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px}
 .add-sched-btn:active{opacity:.85}
@@ -360,17 +372,22 @@ body{font-family:-apple-system,'Noto Sans KR',sans-serif;background:var(--bg);co
     <div class="vtab" id="vtab2" onclick="switchView(2)">월</div>
   </div>
   <div id="view-day">
-    <div class="day-nav">
-      <div class="day-nav-btn" onclick="navDay(-1)">‹</div>
-      <div class="day-nav-center">
-        <div class="day-nav-date" id="dn-date">-</div>
-        <div class="day-nav-dow" id="dn-dow">-</div>
+    <div class="day-banner">
+      <div class="day-banner-nav" onclick="navDay(-1)">‹</div>
+      <div class="day-banner-center">
+        <div class="day-banner-lbl" id="dn-lbl">오늘</div>
+        <div class="day-banner-date" id="dn-date">-</div>
+        <div class="day-banner-dow" id="dn-dow">-</div>
       </div>
       <div class="day-today-btn" onclick="goToday()">오늘</div>
-      <div class="day-nav-btn" onclick="navDay(1)">›</div>
+      <div class="day-banner-nav" onclick="navDay(1)">›</div>
     </div>
     <div class="day-summary" id="day-summary"></div>
     <div id="sched-list"></div>
+    <!-- 완료 저장 버튼 -->
+    <div class="sched-save-bar" id="sched-save-bar">
+      <button class="sched-save-btn" onclick="saveDayDone()">✓ 완료 저장</button>
+    </div>
     <div class="add-sched-btn" onclick="openPickSheet()">＋ 조사 일정 추가</div>
   </div>
   <div id="view-week" style="display:none">
@@ -563,17 +580,51 @@ body{font-family:-apple-system,'Noto Sans KR',sans-serif;background:var(--bg);co
     <div class="sh-tab on" id="shtab0" onclick="shareTab(0)">📤 내보내기</div>
     <div class="sh-tab" id="shtab1" onclick="shareTab(1)">📥 가져오기</div>
   </div>
+  <!-- 내보내기 -->
   <div id="s-export">
-    <div style="font-size:12px;color:var(--sub);margin-bottom:8px">아래 텍스트를 복사해서 카톡 등으로 전송하세요</div>
-    <div class="code-box" id="s-code"></div>
-    <button class="big-btn" style="background:var(--green);color:#fff;border-radius:12px" onclick="copyExport()">📋 복사하기</button>
+    <div style="font-size:12px;font-weight:700;color:var(--sub);margin-bottom:8px;display:flex;align-items:center;justify-content:space-between">
+      <span>내보낼 프로젝트 선택</span>
+      <span onclick="toggleSelectAll()" style="color:var(--green);cursor:pointer;font-size:12px">전체선택</span>
+    </div>
+    <div id="s-export-list" style="max-height:44vh;overflow-y:auto;margin:0 -2px"></div>
+    <button class="big-btn" style="background:var(--green);color:#fff;border-radius:12px;margin-top:12px;display:flex;align-items:center;justify-content:center;gap:8px;border:none;cursor:pointer;font-family:inherit;font-weight:700;font-size:14px;width:100%;padding:13px" onclick="doExportFile()">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      <span id="export-btn-label">파일로 저장 (.json)</span>
+    </button>
   </div>
+  <!-- 가져오기 -->
   <div id="s-import" style="display:none">
-    <div style="font-size:12px;color:var(--sub);margin-bottom:8px">받은 텍스트를 붙여넣기 하세요</div>
-    <textarea class="import-ta" id="s-paste" placeholder="여기에 붙여넣기..."></textarea>
-    <button class="big-btn" style="background:var(--blue);color:#fff;border-radius:12px;margin-top:10px" onclick="doImport()">✓ 가져오기</button>
+    <div style="font-size:13px;color:var(--sub);margin-bottom:14px;line-height:1.6">저장된 <strong>.json 파일</strong>을 선택하면<br>자동으로 가져옵니다</div>
+    <label style="display:block;width:100%;padding:13px;background:#f0f6ff;color:var(--blue);border:1.5px dashed #b8d4f0;border-radius:12px;font-size:14px;font-weight:700;text-align:center;cursor:pointer">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-4px;margin-right:6px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      파일 선택하기
+      <input type="file" id="import-file" accept=".json" style="display:none" onchange="doImportFile(this)">
+    </label>
+    <div id="import-preview" style="display:none;margin-top:12px;background:#f8faf5;border:1px solid #a5d6c0;border-radius:10px;padding:12px">
+      <div style="font-size:12px;font-weight:700;color:var(--green);margin-bottom:8px">📋 가져올 프로젝트</div>
+      <div id="import-preview-list"></div>
+      <button class="big-btn" style="background:var(--green);color:#fff;border-radius:12px;margin-top:10px" onclick="confirmImport()">✓ 가져오기 확인</button>
+    </div>
   </div>
 </div></div>
+
+<!-- ── 커스텀 확인 팝업 ── -->
+<div class="ov" id="ov-confirm" onclick="">
+<div class="sheet" style="max-width:320px" onclick="event.stopPropagation()">
+  <div style="text-align:center;padding:4px 0 8px">
+    <div id="confirm-icon" style="font-size:36px;margin-bottom:10px">⚠️</div>
+    <div id="confirm-msg" style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:6px;line-height:1.5"></div>
+    <div id="confirm-sub" style="font-size:12px;color:var(--sub);line-height:1.6"></div>
+  </div>
+  <div class="popup-divider"></div>
+  <div class="btn-row">
+    <div class="btn btn-c" id="confirm-cancel-btn" onclick="closeConfirmPopup()">취소</div>
+    <div class="btn" id="confirm-ok-btn" onclick="confirmPopupOk()">확인</div>
+  </div>
+</div></div>
+
+<!-- ── 토스트 ── -->
+<div class="toast" id="toast"></div>
 
 <!-- ── 캡처 오버레이 ── -->
 <div class="capture-ov" id="capture-ov">
@@ -646,7 +697,7 @@ const HEADER_SUBS=['프로젝트별 계약자 관리','날짜별 조사 일정',
 function goCalc(){
   // 피해율계산기로 이동 (같은 폴더의 calc/index.html 또는 별도 경로)
   // 현재는 준비 중 알림
-  alert('피해율계산기 연동 준비 중입니다.\n완성 후 통합 예정!');
+  showToast('🌿 피해율계산기 연동 준비 중!');
 }
 
 function switchMain(i){
@@ -679,9 +730,20 @@ function switchView(i){
 }
 function renderCurrentView(){if(curView===0)renderDayView();else if(curView===1)renderWeekView();else renderMonthView();}
 
+// ══ 토스트 ══
+let _toastTimer=null;
+function showToast(msg, duration=2200){
+  const el=document.getElementById('toast');
+  el.textContent=msg;el.classList.add('show');
+  clearTimeout(_toastTimer);
+  _toastTimer=setTimeout(()=>el.classList.remove('show'),duration);
+}
+
 // ══ 일 뷰 ══
-function navDay(d){curDayOffset+=d;renderDayView();}
-function goToday(){curDayOffset=0;renderDayView();}
+let _pendingChecks={}; // {schedKey: checked}
+function navDay(d){curDayOffset+=d;_pendingChecks={};renderDayView();}
+function goToday(){curDayOffset=0;_pendingChecks={};renderDayView();}
+
 function renderDayView(){
   load();
   const today=new Date();today.setHours(0,0,0,0);
@@ -689,29 +751,105 @@ function renderDayView(){
   const ds=dateToStr(cur);
   const months=['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
   const lbl=getDateLabel(ds);
-  document.getElementById('dn-date').textContent=`${months[cur.getMonth()]} ${cur.getDate()}일${lbl?' ('+lbl+')':''}`;
-  document.getElementById('dn-dow').textContent=['일요일','월요일','화요일','수요일','목요일','금요일','토요일'][cur.getDay()];
+  const diff=curDayOffset;
+
+  // 날짜 배너
+  const lblEl=document.getElementById('dn-lbl');
+  const dateEl=document.getElementById('dn-date');
+  const dowEl=document.getElementById('dn-dow');
+  if(lblEl){
+    lblEl.textContent=lbl||`${diff>0?'+':''}${diff}일`;
+    lblEl.className='day-banner-lbl'+(diff<0?' past':diff>0?' future':'');
+    dateEl.textContent=`${months[cur.getMonth()]} ${cur.getDate()}일`;
+    dowEl.textContent=['일요일','월요일','화요일','수요일','목요일','금요일','토요일'][cur.getDay()];
+  }
+
   const daySched=getSchedForDate(ds);
   const sumEl=document.getElementById('day-summary');
   const listEl=document.getElementById('sched-list');
+  const saveBar=document.getElementById('sched-save-bar');
+
   if(!daySched.length){
     sumEl.innerHTML='';
     listEl.innerHTML=`<div class="sched-empty"><div class="ei">📅</div><p>${lbl||fmtDateFull(ds)} 조사 일정이 없습니다<br>아래 버튼으로 계약자를 추가하세요</p></div>`;
+    if(saveBar) saveBar.classList.remove('on');
     return;
   }
+
   let tot=0,don=0;
-  daySched.forEach(s=>{const p=db.projects.find(x=>x.id===s.projId);if(!p||!p.items[s.itemIdx])return;const sc=s.cnt||p.items[s.itemIdx].c||0;tot+=sc;if(s.checked)don+=sc;});
+  daySched.forEach(s=>{
+    const p=db.projects.find(x=>x.id===s.projId);if(!p||!p.items[s.itemIdx])return;
+    const sc=s.cnt||p.items[s.itemIdx].c||0;tot+=sc;
+    const key=`${s.projId}:${s.itemIdx}:${ds}`;
+    const checked=_pendingChecks.hasOwnProperty(key)?_pendingChecks[key]:s.checked;
+    if(checked)don+=sc;
+  });
   sumEl.innerHTML=`<div class="dscard"><div class="dscard-val b">${daySched.length}</div><div class="dscard-lbl">계약자</div></div><div class="dscard"><div class="dscard-val b">${tot}</div><div class="dscard-lbl">조사건</div></div><div class="dscard"><div class="dscard-val g">${don}</div><div class="dscard-lbl">완료</div></div><div class="dscard"><div class="dscard-val r">${tot-don}</div><div class="dscard-lbl">잔여</div></div>`;
+
   let html='';
   daySched.forEach((s,si)=>{
     const p=db.projects.find(x=>x.id===s.projId);if(!p||!p.items[s.itemIdx])return;
     const x=p.items[s.itemIdx];
-    const sc=x.s==='done'?'done':x.s==='fail'?'fail':'';
     const pname=p.branch?`${p.coop} ${p.branch}`:p.coop;
-    html+=`<div class="sched-row ${sc}"><div class="sched-chk ${s.checked?'done':''}" onclick="toggleDone('${ds}',${si})">${s.checked?'✓':''}</div><div class="sched-info"><div class="sched-name">${x.n}</div><div class="sched-meta">${ce(p.crop)} ${p.crop} · ${pname}</div>${x.m?`<div class="memo-badge">📌 ${x.m}</div>`:''}</div><div class="sched-cnt">${s.cnt||x.c}건<br><span style="font-size:10px;color:var(--hint)">전체 ${x.c}건</span></div><button class="sched-del" onclick="removeFromSched('${ds}',${si})">✕</button></div>`;
+    const key=`${s.projId}:${s.itemIdx}:${ds}`;
+    const checked=_pendingChecks.hasOwnProperty(key)?_pendingChecks[key]:s.checked;
+    const rowBg=checked?'done':'';
+    html+=`<div class="sched-row ${rowBg}">
+      <div class="sched-chk ${checked?'done':''}" onclick="pendingCheck('${ds}',${si},'${key}')">${checked?'✓':''}</div>
+      <div class="sched-info">
+        <div class="sched-name">${x.n}</div>
+        <div class="sched-meta">${ce(p.crop)} ${p.crop} · ${pname}</div>
+        ${x.m?`<div class="memo-badge">📌 ${x.m}</div>`:''}
+      </div>
+      <div class="sched-cnt">${s.cnt||x.c}건<br><span style="font-size:10px;color:var(--hint)">전체 ${x.c}건</span></div>
+      <button class="sched-del" onclick="removeFromSched('${ds}',${si})">✕</button>
+    </div>`;
   });
   listEl.innerHTML=html;
+
+  // 변경사항 있으면 저장 버튼 표시
+  const hasPending=Object.keys(_pendingChecks).length>0;
+  if(saveBar) saveBar.classList.toggle('on', hasPending);
 }
+// 체크 표시 (저장 전 임시)
+function pendingCheck(dateStr,schedIdx,key){
+  const daySched=getSchedForDate(dateStr);const s=daySched[schedIdx];if(!s)return;
+  const cur=_pendingChecks.hasOwnProperty(key)?_pendingChecks[key]:s.checked;
+  _pendingChecks[key]=!cur;
+  renderDayView();
+}
+
+// 완료 저장
+function saveDayDone(){
+  load();
+  let count=0;
+  Object.entries(_pendingChecks).forEach(([key,checked])=>{
+    const[projId,itemIdx,dateStr]=key.split(':');
+    const ii=parseInt(itemIdx);
+    const s=schedules.find(x=>x.projId===projId&&x.itemIdx===ii&&x.dateStr===dateStr);
+    if(!s)return;
+    const p=db.projects.find(x=>x.id===projId);if(!p||!p.items[ii])return;
+    const item=p.items[ii];const schedCnt=s.cnt||item.c||0;const totalCnt=item.c||0;
+    if(typeof item.doneCnt!=='number')item.doneCnt=0;
+    if(checked&&!s.checked){
+      item.doneCnt=Math.min(totalCnt,item.doneCnt+schedCnt);
+      s.checked=true;
+      if(item.doneCnt>=totalCnt&&!item.doneDate)item.doneDate=dateStr;
+      count++;
+    } else if(!checked&&s.checked){
+      item.doneCnt=Math.max(0,item.doneCnt-schedCnt);
+      s.checked=false;
+      if(item.doneCnt<totalCnt)item.doneDate='';
+      count++;
+    }
+    item.s=item.doneCnt>=totalCnt?'done':item.doneCnt>0?'partial':'pending';
+  });
+  save();
+  _pendingChecks={};
+  renderDayView();
+  if(count>0) showToast(`✅ ${count}명 완료 저장됐습니다`);
+}
+
 function toggleDone(dateStr,schedIdx){
   load();
   const daySched=getSchedForDate(dateStr);const s=daySched[schedIdx];if(!s)return;
@@ -864,13 +1002,22 @@ function confirmPick(){
     }
   });
   if(moves.length){
-    if(!confirm(`아래 계약자의 기존 일정을 이 날짜로 변경합니다:\n\n${moves.join('\n')}\n\n확인하시겠습니까?`))return;
+    showConfirm({
+      icon:'📅',
+      msg:'일정 날짜를 변경합니다',
+      sub:moves.join('\n'),
+      okText:'변경하기',
+      onOk:()=>_doConfirmPick()
+    });
+    return;
   }
+  _doConfirmPick();
+}
+function _doConfirmPick(){
+  load();
   pickedItems.forEach(key=>{
     const[projId,itemIdx]=key.split(':');const ii=parseInt(itemIdx);
-    // 기존 다른 날짜 일정 삭제
     schedules=schedules.filter(s=>!(s.projId===projId&&s.itemIdx===ii&&s.dateStr!==pickTargetDate));
-    // 이 날짜에 없으면 추가
     if(!schedules.some(s=>s.dateStr===pickTargetDate&&s.projId===projId&&s.itemIdx===ii)){
       const p=db.projects.find(x=>x.id===projId);const maxCnt=p&&p.items[ii]?(+p.items[ii].c||0):0;
       schedules.push({dateStr:pickTargetDate,projId,itemIdx:ii,cnt:maxCnt,checked:false});
@@ -1093,7 +1240,7 @@ function doTransfer(targetId){
   save();
   closeOv('ov-transfer');
   const nm=tgt.branch?`${tgt.coop} ${tgt.branch}`:tgt.coop;
-  alert(`✅ "${item.n}"을 "${nm}"으로 이동했습니다.`);
+  showToast(`✅ "${item.n}" → "${nm}" 이동 완료`);
   renderDet();
 }
 
@@ -1108,11 +1255,11 @@ function pickSt(s){
   else wrap.style.display='none';
 }
 function saveItem(){
-  const name=(document.getElementById('i-name').value||'').trim();if(!name){alert('이름을 입력하세요');return;}
+  const name=(document.getElementById('i-name').value||'').trim();if(!name){showToast('⚠️ 이름을 입력하세요');return;}
   const totalCnt=parseInt(document.getElementById('i-cnt').value)||0;
   const doneCntInput=parseInt(document.getElementById('i-done-cnt').value)||0;
   let doneCnt=0,finalStatus=curSt2;
-  if(curSt2==='partial'){if(!doneCntInput||doneCntInput<=0){alert('완료 건수를 입력하세요');return;}if(doneCntInput>=totalCnt){alert('전체 완료면 ○완료를 선택하세요');return;}doneCnt=doneCntInput;}
+  if(curSt2==='partial'){if(!doneCntInput||doneCntInput<=0){showToast('⚠️ 완료 건수를 입력하세요');return;}if(doneCntInput>=totalCnt){showToast('⚠️ 전체 완료면 ○완료를 선택하세요');return;}doneCnt=doneCntInput;}
   else if(curSt2==='done')doneCnt=totalCnt;
   // 완료 아닌 경우 doneDate 자동 초기화
   const doneDate=curSt2==='done'?(document.getElementById('i-done-date').value||''):'';
@@ -1122,9 +1269,18 @@ function saveItem(){
   save();closeOv('ov-item');renderDet();
 }
 function delItem(){
-  if(!confirm('삭제하시겠습니까?'))return;load();const p=db.projects.find(x=>x.id===curId);if(!p)return;
-  schedules=schedules.filter(s=>!(s.projId===curId&&s.itemIdx===editItemIdx));
-  p.items.splice(editItemIdx,1);save();closeOv('ov-item');renderDet();
+  showConfirm({
+    icon:'🗑️',
+    msg:'계약자를 삭제할까요?',
+    sub:'삭제하면 복구할 수 없습니다',
+    okText:'삭제',
+    okColor:'var(--red)',
+    onOk:()=>{
+      load();const p=db.projects.find(x=>x.id===curId);if(!p)return;
+      schedules=schedules.filter(s=>!(s.projId===curId&&s.itemIdx===editItemIdx));
+      p.items.splice(editItemIdx,1);save();closeOv('ov-item');renderDet();
+    }
+  });
 }
 
 // ══ 프로젝트 시트 ══
@@ -1147,7 +1303,7 @@ function openProjSheet(mode){
 function pickCrop(el,v){document.querySelectorAll('.chip').forEach(c=>c.classList.remove('on'));el.classList.add('on');document.getElementById('p-crop').value=v;}
 function saveProj(){
   const crop=(document.getElementById('p-crop').value||'').trim();const coop=(document.getElementById('p-coop').value||'').trim();
-  if(!crop||!coop){alert('품목과 농협명을 입력하세요');return;}
+  if(!crop||!coop){showToast('⚠️ 품목과 농협명을 입력하세요');return;}
   load();
   let newId=null;
   if(editProjId){
@@ -1167,9 +1323,19 @@ function saveProj(){
   }
 }
 function delProj(){
-  if(!confirm('프로젝트를 삭제하시겠습니까?\n모든 데이터가 삭제됩니다.'))return;
-  load();schedules=schedules.filter(s=>s.projId!==curId);db.projects=db.projects.filter(x=>x.id!==curId);
-  save();closeOv('ov-proj');goProjects();
+  load();const p=db.projects.find(x=>x.id===curId);if(!p)return;
+  const nm=p.branch?`${p.coop} ${p.branch}`:p.coop;
+  showConfirm({
+    icon:'🗑️',
+    msg:`"${p.crop} — ${nm}"을 삭제할까요?`,
+    sub:'계약자, 일정 등 모든 데이터가 삭제됩니다',
+    okText:'삭제',
+    okColor:'var(--red)',
+    onOk:()=>{
+      load();schedules=schedules.filter(s=>s.projId!==curId);db.projects=db.projects.filter(x=>x.id!==curId);
+      save();closeOv('ov-proj');goProjects();showToast('🗑️ 프로젝트가 삭제됐습니다');
+    }
+  });
 }
 
 // ══ 완료내역 ══
@@ -1222,18 +1388,166 @@ function shareTab(i){
   document.getElementById('s-export').style.display=i===0?'':'none';
   document.getElementById('s-import').style.display=i===1?'':'none';
 }
-function copyExport(){
-  const t=document.getElementById('s-code').textContent;
-  navigator.clipboard?.writeText(t).then(()=>{const b=document.querySelector('#ov-share .big-btn');b.textContent='✓ 복사됨!';setTimeout(()=>b.textContent='📋 복사하기',2000);}).catch(()=>{const ta=document.createElement('textarea');ta.value=t;ta.style.cssText='position:fixed;opacity:0';document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);alert('복사됐습니다!');});
+// ══ 커스텀 확인 팝업 ══
+let _confirmOkFn=null;
+function showConfirm({icon='⚠️', msg, sub='', okText='확인', okColor=null, onOk}){
+  document.getElementById('confirm-icon').textContent=icon;
+  document.getElementById('confirm-msg').textContent=msg;
+  document.getElementById('confirm-sub').textContent=sub||'';
+  document.getElementById('confirm-sub').style.display=sub?'':'none';
+  const okBtn=document.getElementById('confirm-ok-btn');
+  okBtn.textContent=okText;
+  okBtn.style.background=okColor||'var(--green)';
+  okBtn.style.color='#fff';
+  _confirmOkFn=onOk;
+  openOv('ov-confirm');
 }
-function doImport(){
-  const raw=(document.getElementById('s-paste').value||'').trim();if(!raw){alert('데이터를 붙여넣으세요');return;}
-  let imp;try{imp=JSON.parse(raw);}catch(e){alert('잘못된 형식입니다');return;}
-  const projData=imp.db||imp;if(!projData.projects||!Array.isArray(projData.projects)){alert('올바른 데이터가 아닙니다');return;}
-  load();const exist=new Set(db.projects.map(x=>x.id));let added=0;
-  projData.projects.forEach(p=>{if(!exist.has(p.id)){db.projects.unshift(p);added++;}else{const i=db.projects.findIndex(x=>x.id===p.id);if(i>=0)db.projects[i]=p;}});
-  if(imp.schedules&&Array.isArray(imp.schedules))imp.schedules.forEach(s=>{if(!schedules.some(x=>x.dateStr===s.dateStr&&x.projId===s.projId&&x.itemIdx===s.itemIdx))schedules.push(s);});
-  save();closeOv('ov-share');alert(`완료! ${added}개 추가, ${projData.projects.length-added}개 업데이트`);renderList();
+function confirmPopupOk(){closeOv('ov-confirm');if(_confirmOkFn)_confirmOkFn();_confirmOkFn=null;}
+function closeConfirmPopup(){closeOv('ov-confirm');_confirmOkFn=null;}
+
+// ══ 공유 (파일 기반) ══
+let _exportSelected=new Set();
+
+function openShare(mode){
+  shareMode=mode;
+  document.getElementById('share-ttl').textContent='데이터 공유';
+  shareTab(0);
+  load();
+  _exportSelected=new Set();
+  // 내보내기: 프로젝트 선택 목록
+  const projects=db.projects;
+  // 특정 프로젝트 상세에서 열면 해당 프로젝트 기본 선택
+  if(mode==='proj'&&curId) _exportSelected.add(curId);
+  else projects.forEach(p=>_exportSelected.add(p.id)); // 전체 기본 선택
+  renderExportList();
+  // 가져오기 초기화
+  document.getElementById('import-preview').style.display='none';
+  document.getElementById('import-file').value='';
+  openOv('ov-share');
+}
+
+function renderExportList(){
+  load();
+  const projects=db.projects;
+  if(!projects.length){
+    document.getElementById('s-export-list').innerHTML='<div style="text-align:center;padding:20px;color:var(--hint);font-size:13px">프로젝트가 없습니다</div>';
+    return;
+  }
+  document.getElementById('s-export-list').innerHTML=projects.map(p=>{
+    const nm=p.branch?`${p.coop} ${p.branch}`:p.coop;
+    const tot=p.items.reduce((a,x)=>a+(+x.c||0),0);
+    const don=p.items.filter(x=>x.s==='done').length;
+    const sel=_exportSelected.has(p.id);
+    return `<div onclick="toggleExportSelect('${p.id}')" style="display:flex;align-items:center;gap:10px;padding:10px 4px;border-bottom:1px solid #f0eeea;cursor:pointer">
+      <div style="width:22px;height:22px;border-radius:6px;border:1.5px solid ${sel?'var(--green)':'var(--border)'};background:${sel?'var(--green)':'#fff'};display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s">
+        ${sel?'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>':''}
+      </div>
+      <div style="font-size:22px;flex-shrink:0">${ce(p.crop)}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:14px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.crop} — ${nm}</div>
+        <div style="font-size:11px;color:var(--sub);margin-top:1px">${p.items.length}명 · ${tot}건 · 완료 ${don}명</div>
+      </div>
+    </div>`;
+  }).join('');
+  // 버튼 레이블 업데이트
+  const cnt=_exportSelected.size;
+  document.getElementById('export-btn-label').textContent=
+    cnt===0?'선택 후 저장하세요':`${cnt}개 프로젝트 저장 (.json)`;
+  document.querySelector('#s-export .big-btn').style.opacity=cnt===0?'0.45':'1';
+  document.querySelector('#s-export .big-btn').style.pointerEvents=cnt===0?'none':'';
+}
+
+function toggleExportSelect(id){
+  if(_exportSelected.has(id))_exportSelected.delete(id);
+  else _exportSelected.add(id);
+  renderExportList();
+}
+
+function toggleSelectAll(){
+  load();
+  if(_exportSelected.size===db.projects.length){
+    _exportSelected.clear();
+  } else {
+    db.projects.forEach(p=>_exportSelected.add(p.id));
+  }
+  renderExportList();
+}
+
+function shareTab(i){
+  document.getElementById('shtab0').classList.toggle('on',i===0);
+  document.getElementById('shtab1').classList.toggle('on',i===1);
+  document.getElementById('s-export').style.display=i===0?'':'none';
+  document.getElementById('s-import').style.display=i===1?'':'none';
+}
+
+function doExportFile(){
+  if(!_exportSelected.size){showToast('⚠️ 프로젝트를 선택하세요');return;}
+  load();
+  const projects=db.projects.filter(p=>_exportSelected.has(p.id));
+  const projSchedules=schedules.filter(s=>_exportSelected.has(s.projId));
+  const data={projects, schedules:projSchedules, exportedAt:new Date().toISOString()};
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  const now=new Date();
+  const fname=projects.length===1
+    ?`조사관리_${projects[0].crop}_${now.getMonth()+1}${now.getDate()}.json`
+    :`조사관리_${projects.length}개_${now.getMonth()+1}${now.getDate()}.json`;
+  a.href=url;a.download=fname;a.click();
+  URL.revokeObjectURL(url);
+  showToast(`📁 ${projects.length}개 프로젝트 저장됐습니다`);
+}
+
+let _importData=null;
+function doImportFile(input){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const data=JSON.parse(e.target.result);
+      const projData=data.projects?data:(data.db||{projects:[]});
+      const projects=projData.projects||[];
+      if(!projects.length){showToast('⚠️ 프로젝트가 없는 파일입니다');return;}
+      _importData=data;
+      // 미리보기
+      load();
+      const exist=new Set(db.projects.map(x=>x.id));
+      let html='';
+      projects.forEach(p=>{
+        const nm=p.branch?`${p.coop} ${p.branch}`:p.coop;
+        const isNew=!exist.has(p.id);
+        html+=`<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #edf5f0">
+          <div style="font-size:18px">${ce(p.crop)}</div>
+          <div style="flex:1;font-size:13px;font-weight:600">${p.crop} — ${nm}</div>
+          <div style="font-size:11px;font-weight:700;color:${isNew?'var(--green)':'var(--blue)'};background:${isNew?'#e8faf3':'#EBF4FF'};padding:2px 8px;border-radius:10px">${isNew?'신규':'업데이트'}</div>
+        </div>`;
+      });
+      document.getElementById('import-preview-list').innerHTML=html;
+      document.getElementById('import-preview').style.display='';
+    }catch(err){showToast('⚠️ 올바른 파일이 아닙니다');}
+  };
+  reader.readAsText(file);
+}
+function confirmImport(){
+  if(!_importData)return;
+  load();
+  const projects=(_importData.projects||(_importData.db||{projects:[]}).projects)||[];
+  const exist=new Set(db.projects.map(x=>x.id));
+  let added=0,updated=0;
+  const addedNames=[];
+  projects.forEach(p=>{
+    if(!exist.has(p.id)){db.projects.unshift(p);added++;addedNames.push(p.crop+' — '+(p.branch?`${p.coop} ${p.branch}`:p.coop));}
+    else{const i=db.projects.findIndex(x=>x.id===p.id);if(i>=0){db.projects[i]=p;updated++;}}
+  });
+  const impSched=_importData.schedules||[];
+  impSched.forEach(s=>{if(!schedules.some(x=>x.dateStr===s.dateStr&&x.projId===s.projId&&x.itemIdx===s.itemIdx))schedules.push(s);});
+  save();_importData=null;closeOv('ov-share');
+  let msg=`✅ `;
+  if(added) msg+=`${addedNames.slice(0,2).join(', ')}${addedNames.length>2?' 등':''} 추가됨`;
+  if(added&&updated) msg+=', ';
+  if(updated) msg+=`${updated}개 업데이트`;
+  showToast(msg, 3000);
+  renderList();
 }
 
 // ══ 유틸 ══
