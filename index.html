@@ -8,7 +8,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>조사건 관리</title>
+<title>손해평가 도우미</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <link rel="manifest" href="./manifest.json">
 <link rel="apple-touch-icon" href="./icon-192.png">
@@ -30,11 +30,16 @@ body{font-family:-apple-system,'Noto Sans KR',sans-serif;background:var(--bg);co
 .header-sub{font-size:11px;opacity:.7;margin-top:2px}
 .header-btn{height:30px;padding:0 10px;background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.4);border-radius:8px;color:#fff;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;white-space:nowrap;font-weight:600;font-family:inherit}
 
-/* ── 하단 탭바 ── */
-.tab-bar{display:flex;background:var(--card);border-top:1px solid var(--border);position:fixed;bottom:0;left:0;right:0;z-index:100;padding-bottom:env(safe-area-inset-bottom,0px)}
+/* ── 하단 메인 탭바 (2개) ── */
+.tab-bar{display:flex;background:var(--card);border-top:1px solid var(--border);position:fixed;bottom:0;left:0;right:0;z-index:200;padding-bottom:env(safe-area-inset-bottom,0px)}
 .tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px 4px 9px;text-align:center;font-size:10px;font-weight:600;color:var(--hint);cursor:pointer;touch-action:manipulation;transition:color .2s;gap:3px}
 .tab-icon{width:24px;height:24px;flex-shrink:0}
 .tab.on{color:var(--green)}
+
+/* ── 상단 서브 탭바 (관리/일정/완료) ── */
+.sub-tab-bar{display:flex;background:var(--card);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100}
+.stab{flex:1;padding:10px 2px 9px;text-align:center;font-size:12px;font-weight:600;color:var(--hint);border-bottom:2.5px solid transparent;cursor:pointer;touch-action:manipulation;transition:color .2s,border-color .2s,background .2s}
+.stab.on{color:var(--green);border-bottom-color:var(--green);background:#e8faf3}
 
 /* ── 슬라이더 ── */
 .tab-slider-wrap{overflow:hidden;width:100%}
@@ -92,7 +97,7 @@ body{font-family:-apple-system,'Noto Sans KR',sans-serif;background:var(--bg);co
 
 /* ══ 탭1: 조사일정 ══ */
 /* 뷰 전환 탭 (일/주/월) */
-.view-tabs{display:flex;background:var(--card);border-bottom:1px solid var(--border);position:sticky;top:62px;z-index:90}
+.view-tabs{display:flex;background:var(--card);border-bottom:1px solid var(--border);position:sticky;top:44px;z-index:90}
 .vtab{flex:1;padding:9px 4px;text-align:center;font-size:13px;font-weight:600;color:var(--hint);border-bottom:2.5px solid transparent;cursor:pointer}
 .vtab.on{color:var(--green);border-bottom-color:var(--green)}
 
@@ -103,7 +108,7 @@ body{font-family:-apple-system,'Noto Sans KR',sans-serif;background:var(--bg);co
 .day-nav-date{font-size:15px;font-weight:700;line-height:1.3}
 .day-nav-dow{font-size:11px;color:var(--sub);margin-top:1px}
 .day-today-btn{padding:4px 10px;border-radius:20px;background:var(--green);color:#fff;font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0}
-.day-summary{display:grid;grid-template-columns:repeat(4,25%);width:100%;position:sticky;top:106px;z-index:80;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.day-summary{display:grid;grid-template-columns:repeat(4,25%);width:100%;position:sticky;top:88px;z-index:80;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
 .dscard{background:rgba(255,255,255,.72);padding:10px 4px;text-align:center;border-right:.5px solid rgba(216,214,206,.6);border-bottom:.5px solid rgba(216,214,206,.6)}
 .dscard:first-child{border-left:.5px solid rgba(216,214,206,.6)}
 .dscard-val{font-size:17px;font-weight:800;line-height:1}
@@ -128,7 +133,7 @@ body{font-family:-apple-system,'Noto Sans KR',sans-serif;background:var(--bg);co
 .add-sched-btn:active{opacity:.85}
 
 /* 주 뷰 */
-.week-head{display:flex;background:var(--card);border-bottom:1px solid var(--border);position:sticky;top:106px;z-index:80}
+.week-head{display:flex;background:var(--card);border-bottom:1px solid var(--border);position:sticky;top:88px;z-index:80}
 .wh-cell{flex:0 0 calc(100%/7);text-align:center;padding:7px 2px;font-size:11px;font-weight:600;color:var(--sub);cursor:pointer;border-bottom:2px solid transparent}
 .wh-cell.today{color:var(--green)}.wh-cell.has-item{color:var(--text)}.wh-cell.sel{border-bottom-color:var(--green);color:var(--green)}
 .wh-date{font-size:13px;font-weight:700;display:block;line-height:1.4}
@@ -154,7 +159,7 @@ body{font-family:-apple-system,'Noto Sans KR',sans-serif;background:var(--bg);co
 .month-detail-hdr{padding:8px 14px 4px;font-size:12px;font-weight:700;color:var(--sub);background:var(--bg)}
 
 /* ══ 탭2: 완료내역 ══ */
-.done-toolbar{display:flex;gap:8px;padding:12px 14px 8px;align-items:center;background:var(--card);border-bottom:1px solid var(--border);position:sticky;top:62px;z-index:90;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.done-toolbar{display:flex;gap:8px;padding:12px 14px 8px;align-items:center;background:var(--card);border-bottom:1px solid var(--border);position:sticky;top:44px;z-index:90;overflow-x:auto;-webkit-overflow-scrolling:touch}
 .done-toolbar::-webkit-scrollbar{display:none}
 .dfchip{height:30px;padding:0 14px;border-radius:20px;border:1.5px solid var(--border);background:var(--card);color:var(--sub);font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0;display:flex;align-items:center}
 .dfchip.on{background:var(--green);border-color:var(--green);color:#fff}
@@ -284,20 +289,29 @@ body{font-family:-apple-system,'Noto Sans KR',sans-serif;background:var(--bg);co
 </head>
 <body>
 
-<!-- ── 탭 슬라이더 ── -->
+<!-- ── 공통 헤더 ── -->
+<div class="header" id="main-header">
+  <div class="header-icon">📋</div>
+  <div style="flex:1">
+    <h1>조사건 관리</h1>
+    <div class="header-sub" id="header-sub">프로젝트별 계약자 관리</div>
+  </div>
+  <button class="header-btn" onclick="openShare('all')">⇅ 공유</button>
+</div>
+
+<!-- ── 상단 서브 탭바 (관리/일정/완료) ── -->
+<div class="sub-tab-bar">
+  <div class="stab on" id="stab0" onclick="switchMain(0)">관리</div>
+  <div class="stab"    id="stab1" onclick="switchMain(1)">일정</div>
+  <div class="stab"    id="stab2" onclick="switchMain(2)">완료</div>
+</div>
+
+<!-- ── 슬라이더 ── -->
 <div class="tab-slider-wrap">
 <div class="tab-slider" id="tab-slider">
 
 <!-- 탭0: 조사관리 -->
 <div class="tab-content" id="tab-content-0">
-  <div class="header">
-    <div class="header-icon">📋</div>
-    <div style="flex:1">
-      <h1>조사건 관리</h1>
-      <div class="header-sub">프로젝트별 계약자 관리</div>
-    </div>
-    <button class="header-btn" onclick="openShare('all')">⇅ 공유</button>
-  </div>
   <div class="proj-top">
     <button class="new-btn" onclick="openProjSheet(null)">＋ 새 조사 프로젝트</button>
   </div>
@@ -306,14 +320,6 @@ body{font-family:-apple-system,'Noto Sans KR',sans-serif;background:var(--bg);co
 
 <!-- 탭1: 조사일정 -->
 <div class="tab-content" id="tab-content-1">
-  <div class="header">
-    <div class="header-icon">📅</div>
-    <div style="flex:1">
-      <h1>조사 일정</h1>
-      <div class="header-sub" id="sched-hdr-sub">날짜 선택</div>
-    </div>
-    <button class="header-btn" onclick="openShare('all')">⇅ 공유</button>
-  </div>
   <div class="view-tabs">
     <div class="vtab on" id="vtab0" onclick="switchView(0)">일</div>
     <div class="vtab" id="vtab1" onclick="switchView(1)">주</div>
@@ -356,13 +362,6 @@ body{font-family:-apple-system,'Noto Sans KR',sans-serif;background:var(--bg);co
 
 <!-- 탭2: 완료내역 -->
 <div class="tab-content" id="tab-content-2">
-  <div class="header">
-    <div class="header-icon">✅</div>
-    <div style="flex:1">
-      <h1>완료내역</h1>
-      <div class="header-sub" id="done-hdr-sub">일자별 조사 완료 목록</div>
-    </div>
-  </div>
   <div class="done-toolbar" id="done-filter-bar"></div>
   <div id="done-list"></div>
 </div>
@@ -370,19 +369,15 @@ body{font-family:-apple-system,'Noto Sans KR',sans-serif;background:var(--bg);co
 </div><!-- /tab-slider -->
 </div><!-- /tab-slider-wrap -->
 
-<!-- ── 하단 탭바 ── -->
+<!-- ── 하단 메인 탭바 (2개) ── -->
 <div class="tab-bar">
-  <div class="tab on" id="tab0" onclick="switchMain(0)">
+  <div class="tab on" id="maintab0" onclick="goCalc()">
+    <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 7H6a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 14l2 2 4-4"/></svg>
+    <div>피해율계산기</div>
+  </div>
+  <div class="tab on" id="maintab1">
     <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg>
     <div>조사관리</div>
-  </div>
-  <div class="tab" id="tab1" onclick="switchMain(1)">
-    <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-    <div>조사일정</div>
-  </div>
-  <div class="tab" id="tab2" onclick="switchMain(2)">
-    <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-    <div>완료내역</div>
   </div>
 </div>
 
@@ -586,15 +581,24 @@ const ce=c=>{const m={마늘:'🧄',감자:'🥔',인삼:'🌿',단호박:'🎃'
 function isInSched(projId,itemIdx){return schedules.some(s=>s.projId===projId&&s.itemIdx===itemIdx);}
 function getSchedForDate(dateStr){return schedules.filter(s=>s.dateStr===dateStr);}
 
-// ══ 탭 전환 ══
+// ══ 서브탭 전환 (관리/일정/완료) ══
 let _curTab=0;
+const HEADER_SUBS=['프로젝트별 계약자 관리','날짜별 조사 일정','일자별 조사 완료 목록'];
+
+function goCalc(){
+  // 피해율계산기로 이동 (같은 폴더의 calc/index.html 또는 별도 경로)
+  // 현재는 준비 중 알림
+  alert('피해율계산기 연동 준비 중입니다.\n완성 후 통합 예정!');
+}
+
 function switchMain(i){
   _curTab=i;
-  document.querySelectorAll('.tab').forEach((t,j)=>t.classList.toggle('on',i===j));
+  document.querySelectorAll('.stab').forEach((t,j)=>t.classList.toggle('on',i===j));
   const slider=document.getElementById('tab-slider');
   slider.style.transition='transform .32s cubic-bezier(.4,0,.2,1)';
   slider.style.transform=`translateX(${-i*100}%)`;
   document.getElementById('scr-det').classList.remove('on');
+  document.getElementById('header-sub').textContent=HEADER_SUBS[i];
   if(i===0){localStorage.setItem('last_screen','list');renderList();}
   else if(i===1){localStorage.setItem('last_screen','sched');renderCurrentView();}
   else{localStorage.setItem('last_screen','done');renderDoneList();}
@@ -1123,7 +1127,8 @@ load();
     slider.style.transition='none';
     slider.style.transform=`translateX(${-i*100}%)`;
     _curTab=i;
-    document.querySelectorAll('.tab').forEach((t,j)=>t.classList.toggle('on',i===j));
+    document.querySelectorAll('.stab').forEach((t,j)=>t.classList.toggle('on',i===j));
+    document.getElementById('header-sub').textContent=HEADER_SUBS[i];
     requestAnimationFrame(()=>slider.style.transition='');
   }
   if(lastScreen==='proj'&&lastProjId){
