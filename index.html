@@ -41,6 +41,29 @@ body{font-family:-apple-system,'Noto Sans KR',sans-serif;background:var(--bg);co
 .tab-slider{display:flex;transition:transform .32s cubic-bezier(.4,0,.2,1);will-change:transform}
 .tab-content{flex:0 0 100%;width:100%;box-sizing:border-box}
 
+/* ── 예정 일정 위젯 ── */
+.upcoming-wrap{background:var(--card);border-bottom:1px solid var(--border);padding:10px 14px 6px}
+.upcoming-title{font-size:11px;font-weight:700;color:var(--sub);letter-spacing:.05em;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between}
+.upcoming-title span{color:var(--green);font-size:10px;font-weight:600;cursor:pointer}
+.upcoming-row{display:flex;align-items:center;padding:6px 0;border-bottom:1px solid #f5f4f0;gap:10px;cursor:pointer}
+.upcoming-row:last-child{border-bottom:none}
+.upcoming-row:active{opacity:.7}
+.upcom-date{min-width:52px;flex-shrink:0}
+.upcom-date-main{font-size:13px;font-weight:700;color:var(--text);line-height:1.2}
+.upcom-date-sub{font-size:10px;color:var(--hint);margin-top:1px}
+.upcom-date-main.today{color:var(--green)}
+.upcom-date-main.tomorrow{color:var(--orange)}
+.upcom-bar-wrap{flex:1;min-width:0}
+.upcom-tags{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:3px}
+.upcom-tag{font-size:10px;font-weight:600;background:#f0f8f5;color:var(--green);border:1px solid #c8e6d8;border-radius:5px;padding:1px 6px;white-space:nowrap}
+.upcom-bar-bg{height:4px;background:#eee;border-radius:2px;overflow:hidden}
+.upcom-bar-fill{height:100%;background:var(--green);border-radius:2px;transition:width .4s}
+.upcom-bar-fill.done{background:#94d3b8}
+.upcom-cnt{min-width:44px;text-align:right;flex-shrink:0}
+.upcom-cnt-val{font-size:14px;font-weight:800;color:var(--text);line-height:1}
+.upcom-cnt-lbl{font-size:9px;color:var(--hint);margin-top:1px}
+.upcom-empty{text-align:center;padding:12px 0 6px;color:var(--hint);font-size:12px}
+
 /* ══ 탭0: 조사관리 ══ */
 .proj-top{padding:14px 14px 0}
 .new-btn{width:100%;padding:13px;background:var(--green);color:#fff;border-radius:var(--r);font-size:15px;font-weight:700;text-align:center;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;border:none;font-family:inherit}
@@ -278,6 +301,7 @@ body{font-family:-apple-system,'Noto Sans KR',sans-serif;background:var(--bg);co
   <div class="proj-top">
     <button class="new-btn" onclick="openProjSheet(null)">＋ 새 조사 프로젝트</button>
   </div>
+  <div class="upcoming-wrap" id="upcoming-wrap"></div>
   <div class="proj-list" id="proj-list"></div>
 </div>
 
@@ -715,27 +739,69 @@ function openPickSheetForDate(ds){
 function onPickDateChange(){pickTargetDate=document.getElementById('pick-date-input').value||todayStr();renderPickList();}
 function renderPickList(){
   load();const q=(document.getElementById('pick-q').value||'').trim();
-  const alreadyAdded=new Set(schedules.filter(s=>s.dateStr===pickTargetDate).map(s=>`${s.projId}:${s.itemIdx}`));
+  const addedThisDate=new Set(schedules.filter(s=>s.dateStr===pickTargetDate).map(s=>`${s.projId}:${s.itemIdx}`));
+  const addedOtherDate=new Map();
+  schedules.filter(s=>s.dateStr!==pickTargetDate).forEach(s=>{
+    const key=`${s.projId}:${s.itemIdx}`;
+    if(!addedOtherDate.has(key)) addedOtherDate.set(key,s.dateStr);
+  });
   let html='',count=0;
   db.projects.forEach(p=>{
     const pname=p.branch?`${p.coop} ${p.branch}`:p.coop;
     p.items.forEach((x,i)=>{
       if(q&&!x.n.includes(q))return;if(x.s==='done')return;count++;
-      const key=`${p.id}:${i}`;const isAdded=alreadyAdded.has(key);const isPicked=pickedItems.has(key);
-      html+=`<div class="pick-item" onclick="togglePick('${p.id}',${i},'${key}')"><div class="pick-chk ${isPicked||isAdded?'on':''}">${isPicked||isAdded?'✓':''}</div><div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:600">${x.n}${isAdded?' <span style="font-size:10px;color:var(--green)">추가됨</span>':''}</div><div style="font-size:10px;color:var(--hint)">${ce(p.crop)} ${p.crop} · ${pname} · ${x.c}건</div>${x.m?`<div style="font-size:10px;color:var(--red)">📌 ${x.m}</div>`:''}</div><div style="font-size:12px;color:var(--sub)">${fmtDate(x.d)}</div></div>`;
+      const key=`${p.id}:${i}`;
+      const isAddedHere=addedThisDate.has(key);
+      const otherDate=addedOtherDate.get(key);
+      const isPicked=pickedItems.has(key);
+      let badge='';
+      if(isAddedHere) badge=`<span style="font-size:10px;color:var(--green);font-weight:700"> · 이 날 추가됨</span>`;
+      else if(otherDate){
+        const lbl=getDateLabel(otherDate)||fmtDateFull(otherDate);
+        badge=`<span style="font-size:10px;color:var(--orange);font-weight:700"> · ${lbl} 일정→이 날로 변경</span>`;
+      }
+      const dimmed=isAddedHere; // 이 날 이미 추가된 건만 비활성
+      html+=`<div class="pick-item" style="${dimmed?'opacity:.4;pointer-events:none':''}" onclick="togglePick('${p.id}',${i},'${key}')">
+        <div class="pick-chk ${isPicked||isAddedHere?'on':''}">${isPicked||isAddedHere?'✓':''}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:14px;font-weight:600">${x.n}${badge}</div>
+          <div style="font-size:10px;color:var(--hint)">${ce(p.crop)} ${p.crop} · ${pname} · ${x.c}건</div>
+          ${x.m?`<div style="font-size:10px;color:var(--red)">📌 ${x.m}</div>`:''}
+        </div>
+        <div style="font-size:12px;color:var(--sub)">${fmtDate(x.d)}</div>
+      </div>`;
     });
   });
   document.getElementById('pick-list').innerHTML=count?html:'<div style="text-align:center;padding:24px;color:var(--hint);font-size:13px">계약자가 없습니다<br>먼저 프로젝트에 계약자를 추가하세요</div>';
 }
 function togglePick(projId,itemIdx,key){
-  load();if(schedules.some(s=>s.dateStr===pickTargetDate&&s.projId===projId&&s.itemIdx===itemIdx))return;
-  if(pickedItems.has(key))pickedItems.delete(key);else pickedItems.add(key);renderPickList();
+  load();
+  if(schedules.some(s=>s.dateStr===pickTargetDate&&s.projId===projId&&s.itemIdx===itemIdx))return;
+  if(pickedItems.has(key))pickedItems.delete(key);else pickedItems.add(key);
+  renderPickList();
 }
 function confirmPick(){
   if(!pickedItems.size){closeOv('ov-pick');return;}
   load();
+  // 다른 날짜에서 이동할 항목 목록
+  const moves=[];
   pickedItems.forEach(key=>{
     const[projId,itemIdx]=key.split(':');const ii=parseInt(itemIdx);
+    const existing=schedules.find(s=>s.projId===projId&&s.itemIdx===ii&&s.dateStr!==pickTargetDate);
+    if(existing){
+      const p=db.projects.find(x=>x.id===projId);
+      const lbl=getDateLabel(existing.dateStr)||fmtDateFull(existing.dateStr);
+      moves.push(`${p?.items[ii]?.n||''} (${lbl} → ${fmtDateFull(pickTargetDate)})`);
+    }
+  });
+  if(moves.length){
+    if(!confirm(`아래 계약자의 기존 일정을 이 날짜로 변경합니다:\n\n${moves.join('\n')}\n\n확인하시겠습니까?`))return;
+  }
+  pickedItems.forEach(key=>{
+    const[projId,itemIdx]=key.split(':');const ii=parseInt(itemIdx);
+    // 기존 다른 날짜 일정 삭제
+    schedules=schedules.filter(s=>!(s.projId===projId&&s.itemIdx===ii&&s.dateStr!==pickTargetDate));
+    // 이 날짜에 없으면 추가
     if(!schedules.some(s=>s.dateStr===pickTargetDate&&s.projId===projId&&s.itemIdx===ii)){
       const p=db.projects.find(x=>x.id===projId);const maxCnt=p&&p.items[ii]?(+p.items[ii].c||0):0;
       schedules.push({dateStr:pickTargetDate,projId,itemIdx:ii,cnt:maxCnt,checked:false});
@@ -744,9 +810,73 @@ function confirmPick(){
   save();closeOv('ov-pick');renderCurrentView();
 }
 
+// ══ 예정 일정 위젯 ══
+function renderUpcoming(){
+  load();
+  const el=document.getElementById('upcoming-wrap');
+  if(!el)return;
+  const today=new Date();today.setHours(0,0,0,0);
+
+  // 오늘 포함 7일치 날짜 생성
+  const days=[];
+  for(let i=0;i<7;i++){
+    const d=new Date(today);d.setDate(today.getDate()+i);
+    days.push(dateToStr(d));
+  }
+
+  // 각 날짜별 일정 집계
+  const rows=days.map(ds=>{
+    const list=getSchedForDate(ds);
+    if(!list.length)return null;
+    let tot=0,done=0;
+    const cropSet=new Set();
+    list.forEach(s=>{
+      const p=db.projects.find(x=>x.id===s.projId);
+      if(!p||!p.items[s.itemIdx])return;
+      const cnt=s.cnt||p.items[s.itemIdx].c||0;
+      tot+=cnt; if(s.checked)done+=cnt;
+      cropSet.add(ce(p.crop)+' '+p.crop);
+    });
+    return{ds,list,tot,done,crops:[...cropSet]};
+  }).filter(Boolean);
+
+  if(!rows.length){
+    el.innerHTML=`<div class="upcoming-title">📅 향후 일정</div><div class="upcom-empty">등록된 일정이 없습니다</div>`;
+    return;
+  }
+
+  let html=`<div class="upcoming-title">📅 향후 7일 일정 <span onclick="switchMain(1)">전체보기 ›</span></div>`;
+  rows.forEach(({ds,list,tot,done,crops})=>{
+    const d=strToDate(ds);const lbl=getDateLabel(ds);
+    const dow=DAY_KO[d.getDay()];
+    const dowColor=d.getDay()===0?'color:var(--red)':d.getDay()===6?'color:var(--blue)':'';
+    const dateMain=lbl||`${d.getMonth()+1}/${d.getDate()}`;
+    const dateCls=lbl==='오늘'?'today':lbl==='내일'?'tomorrow':'';
+    const pct=tot?Math.round(done/tot*100):0;
+    const tagHtml=crops.slice(0,3).map(c=>`<div class="upcom-tag">${c}</div>`).join('')+(crops.length>3?`<div class="upcom-tag">+${crops.length-3}</div>`:'');
+    html+=`<div class="upcoming-row" onclick="switchMain(1);curDayOffset=${Math.round((strToDate(ds)-new Date(todayStr()))/86400000)};switchView(0);setTimeout(renderDayView,50)">
+      <div class="upcom-date">
+        <div class="upcom-date-main ${dateCls}" style="${dowColor}">${dateMain}</div>
+        <div class="upcom-date-sub">${lbl?dow:'('+dow+')'}</div>
+      </div>
+      <div class="upcom-bar-wrap">
+        <div class="upcom-tags">${tagHtml}</div>
+        <div class="upcom-bar-bg"><div class="upcom-bar-fill${done===tot&&tot>0?' done':''}" style="width:${pct}%"></div></div>
+      </div>
+      <div class="upcom-cnt">
+        <div class="upcom-cnt-val">${list.length}명</div>
+        <div class="upcom-cnt-lbl">${tot}건</div>
+      </div>
+    </div>`;
+  });
+  el.innerHTML=html;
+}
+
 // ══ 프로젝트 목록 ══
 function renderList(){
-  load();const el=document.getElementById('proj-list');
+  load();
+  renderUpcoming();
+  const el=document.getElementById('proj-list');
   if(!db.projects.length){el.innerHTML=`<div class="empty-proj"><div class="ei">📋</div><p>아직 프로젝트가 없습니다<br>위 버튼으로 새 프로젝트를 만드세요</p></div>`;return;}
   el.innerHTML=db.projects.map(p=>{
     const tot=p.items.reduce((a,x)=>a+(+x.c||0),0);
