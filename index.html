@@ -21,7 +21,7 @@
   --r:12px;--rs:8px;
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-body{font-family:-apple-system,'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text);font-size:14px;min-height:100vh;-webkit-user-select:none;user-select:none;overflow-x:hidden;padding-bottom:calc(56px + env(safe-area-inset-bottom,0px))}
+body{font-family:-apple-system,'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text);font-size:14px;min-height:100vh;-webkit-user-select:none;user-select:none;padding-bottom:calc(56px + env(safe-area-inset-bottom,0px))}
 
 /* ── 헤더 ── */
 .header{background:var(--green);color:#fff;padding:14px 14px 12px;display:flex;align-items:center;gap:10px}
@@ -42,12 +42,13 @@ body{font-family:-apple-system,'Noto Sans KR',sans-serif;background:var(--bg);co
 .stab.on{color:var(--green);border-bottom-color:var(--green);background:#e8faf3}
 
 /* ── 슬라이더 ── */
-.tab-pane{display:none;animation:none}
-.tab-pane.on{display:block}
-.tab-pane.slide-in-right{animation:slideInRight .28s cubic-bezier(.4,0,.2,1)}
-.tab-pane.slide-in-left{animation:slideInLeft .28s cubic-bezier(.4,0,.2,1)}
-@keyframes slideInRight{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:translateX(0)}}
-@keyframes slideInLeft{from{opacity:0;transform:translateX(-40px)}to{opacity:1;transform:translateX(0)}}
+/* ── 슬라이더(계산기 방식): 세 패널을 옆으로 나란히 두고 통째로 translateX ── */
+.tab-slider-wrap{clip-path:inset(0);width:100%}
+.tab-slider{display:flex;align-items:flex-start;transition:transform .3s cubic-bezier(.4,0,.2,1);will-change:transform}
+.tab-pane{flex:0 0 100%;width:100%;min-width:0;height:0;overflow:hidden}
+.tab-pane.on{height:auto;overflow:visible}
+/* 드래그/전환 중에는 양옆 패널도 펼쳐서 손가락 따라 미리 보이게 */
+.tab-slider.dragging .tab-pane{height:auto;overflow:visible}
 
 /* ── 예정 일정 위젯 ── */
 .upcoming-wrap{background:var(--card);border-bottom:1px solid var(--border);padding:10px 14px 6px}
@@ -334,16 +335,6 @@ body{font-family:-apple-system,'Noto Sans KR',sans-serif;background:var(--bg);co
 .cap-sum-val.g{color:var(--green)}.cap-sum-val.r{color:var(--red)}.cap-sum-val.b{color:var(--blue)}
 .cap-sum-lbl{font-size:9px;color:#666;margin-top:2px;font-weight:600}
 .cap-footer{font-size:10px;color:#aaa;text-align:right;margin-top:6px}
-
-/* ── 백업 권장 배너 ── */
-.backup-banner{display:flex;flex-wrap:wrap;align-items:center;gap:10px;background:#FFF8E1;border:1px solid #FFE082;border-radius:var(--r);padding:12px 14px;margin-bottom:12px}
-.bb-icon{font-size:22px;flex-shrink:0}
-.bb-text{flex:1;min-width:150px;font-size:11.5px;line-height:1.5;color:#9b7a1a}
-.bb-text b{display:block;font-size:13px;color:#5d4500;margin-bottom:1px}
-.bb-actions{display:flex;gap:7px;flex-shrink:0;margin-left:auto}
-.bb-btn{border:none;border-radius:8px;padding:8px 13px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit}
-.bb-go{background:var(--orange);color:#fff}
-.bb-snooze{background:#fff;color:#9b7a1a;border:1px solid #FFE082}
 </style>
 </head>
 <body>
@@ -365,6 +356,9 @@ body{font-family:-apple-system,'Noto Sans KR',sans-serif;background:var(--bg);co
   <div class="stab"    id="stab2" onclick="switchMain(2)">완료</div>
 </div>
 
+
+<!-- ── 탭 슬라이더(관리/일정/완료) ── -->
+<div class="tab-slider-wrap"><div class="tab-slider" id="tab-slider">
 
 <!-- 탭0: 조사관리 -->
 <div class="tab-pane on" id="tab-pane-0">
@@ -426,6 +420,8 @@ body{font-family:-apple-system,'Noto Sans KR',sans-serif;background:var(--bg);co
   <div class="done-toolbar" id="done-filter-bar"></div>
   <div id="done-list"></div>
 </div>
+
+</div></div><!-- /tab-slider /tab-slider-wrap -->
 
 
 
@@ -696,34 +692,9 @@ function load(){
       localStorage.setItem(SKEY,JSON.stringify(schedules));
     }
   }catch(e){schedules=[];}
-  // 계약자 id 부여 + 일정 itemIdx→itemId 변환
-  const changed=ensureIds(db.projects,schedules);
-  // 변환 불가(itemId 없는) 일정은 깨진 데이터이므로 제거
-  const before=schedules.length;
-  schedules=schedules.filter(s=>s.itemId);
-  if(changed||schedules.length!==before)save();
 }
 function save(){localStorage.setItem(KEY,JSON.stringify(db));localStorage.setItem(SKEY,JSON.stringify(schedules));}
-let _uidc=0;
-function uid(){return Date.now().toString(36)+(_uidc++).toString(36)+Math.random().toString(36).slice(2,5);}
-
-// ── 계약자 id 조회 헬퍼 (일정은 itemId로 계약자를 참조) ──
-function getItem(p,itemId){return p&&p.items?p.items.find(x=>x.id===itemId):null;}
-
-// ── 마이그레이션: 계약자에 고유 id 부여 + 일정의 itemIdx → itemId 변환 ──
-function ensureIds(projects,scheds){
-  let changed=false;
-  (projects||[]).forEach(p=>{
-    if(!p.items)p.items=[];
-    p.items.forEach(x=>{if(!x.id){x.id=uid();changed=true;}});
-  });
-  (scheds||[]).forEach(s=>{
-    if(s.itemId)return;
-    const p=(projects||[]).find(x=>x.id===s.projId);
-    if(p&&typeof s.itemIdx==='number'&&p.items[s.itemIdx]){s.itemId=p.items[s.itemIdx].id;changed=true;}
-  });
-  return changed;
-}
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,5);}
 
 // ── 날짜 유틸 ──
 function dateToStr(d){return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
@@ -743,11 +714,11 @@ const DORD=['14일','15일','16일','18일','19일','20일','20일 이후','21�
 const dk=d=>{if(!d)return'9999';if(d.includes('-'))return d;const i=DORD.indexOf(d);return i<0?'99':String(i).padStart(2,'0');};
 const ce=c=>{const m={마늘:'🧄',양파:'🧅',착과수조사:'🍇',적과후착과수조사:'🍎',벼:'🌾',콩:'🫘'};return m[c]||'🌾'};
 
-function isInSched(projId,itemId){return schedules.some(s=>s.projId===projId&&s.itemId===itemId);}
+function isInSched(projId,itemIdx){return schedules.some(s=>s.projId===projId&&s.itemIdx===itemIdx);}
 function getSchedForDate(dateStr){return schedules.filter(s=>s.dateStr===dateStr);}
 
 // ══ 서브탭 전환 (관리/일정/완료) ══
-let _curTab=0;
+let _curTab=0, _slideTimer=null;
 const HEADER_SUBS=['프로젝트별 계약자 관리','날짜별 조사 일정','일자별 조사 완료 목록'];
 
 function goCalc(){
@@ -756,52 +727,28 @@ function goCalc(){
   showToast('🌿 피해율계산기 연동 준비 중!');
 }
 
-let _animTimers={};
-function animateIn(p,dir){
-  clearTimeout(_animTimers[p.id]);
-  p.style.transition='none';
-  p.style.transform=`translateX(${dir*34}px)`;
-  p.style.opacity='0';
-  p.style.willChange='transform';
-  void p.offsetWidth; // 시작 상태 확정(리플로우) — 콘텐츠 레이아웃 비용을 여기서 미리 치름
-  requestAnimationFrame(()=>{
-    p.style.transition='transform .26s cubic-bezier(.22,.61,.36,1),opacity .2s ease';
-    p.style.transform='translateX(0)';
-    p.style.opacity='1';
-    _animTimers[p.id]=setTimeout(()=>{
-      // 정지 상태에선 인라인 transform 제거(스티키 동작을 원상태로 유지)
-      p.style.transition='';p.style.transform='';p.style.opacity='';p.style.willChange='';
-    },300);
-  });
-}
 function switchMain(i){
-  const prev=_curTab;
   _curTab=i;
   document.querySelectorAll('.stab').forEach((t,j)=>t.classList.toggle('on',i===j));
+  [0,1,2].forEach(j=>{
+    const p=document.getElementById(`tab-pane-${j}`);
+    if(p) p.classList.toggle('on',i===j);
+  });
+  const slider=document.getElementById('tab-slider');
+  if(slider){
+    slider.classList.add('dragging');                 // 전환 중 양옆 패널 렌더 유지
+    slider.style.transition='transform .3s cubic-bezier(.4,0,.2,1)';
+    slider.style.transform=`translateX(${-i*100}%)`;
+    clearTimeout(_slideTimer);
+    _slideTimer=setTimeout(()=>slider.classList.remove('dragging'),340);
+  }
   const saveBar=document.getElementById('sched-save-bar');
   if(saveBar&&i!==1) saveBar.classList.remove('on');
   document.getElementById('scr-det').classList.remove('on');
   document.getElementById('header-sub').textContent=HEADER_SUBS[i];
-  // 1) 콘텐츠 먼저 렌더 (애니메이션과 분리해 끊김 방지)
   if(i===0){localStorage.setItem('last_screen','list');renderList();}
   else if(i===1){localStorage.setItem('last_screen','sched');renderCurrentView();}
   else{localStorage.setItem('last_screen','done');renderDoneList();}
-  // 2) 패널 표시 전환 + 슬라이드 인
-  const dir=i>prev?1:-1;
-  [0,1,2].forEach(j=>{
-    const p=document.getElementById(`tab-pane-${j}`);
-    if(!p)return;
-    if(i===j){
-      p.classList.add('on');
-      clearTimeout(_animTimers[p.id]);
-      if(i!==prev) animateIn(p,dir);
-      else{p.style.transition='';p.style.transform='';p.style.opacity='';p.style.willChange='';}
-    } else {
-      p.classList.remove('on');
-      clearTimeout(_animTimers[p.id]);
-      p.style.transition='';p.style.transform='';p.style.opacity='';p.style.willChange='';
-    }
-  });
 }
 function goProjects(){
   localStorage.setItem('last_screen','list');
@@ -840,7 +787,8 @@ function openSchedDateSheet(dateStr, schedIdx){
   load();
   const daySched=getSchedForDate(dateStr);
   const s=daySched[schedIdx];if(!s)return;
-  const p=db.projects.find(x=>x.id===s.projId);const x=getItem(p,s.itemId);if(!p||!x)return;
+  const p=db.projects.find(x=>x.id===s.projId);if(!p||!p.items[s.itemIdx])return;
+  const x=p.items[s.itemIdx];
   const pname=p.branch?`${p.coop} ${p.branch}`:p.coop;
   document.getElementById('sched-date-title').textContent='일정 날짜 변경';
   document.getElementById('sched-date-info').innerHTML=
@@ -870,15 +818,15 @@ function confirmSchedDate(){
   const daySched=getSchedForDate(dateStr);
   const s=daySched[schedIdx];if(!s){closeOv('ov-sched-date');return;}
   // 이미 그 날짜에 같은 계약자 일정 있는지 체크
-  const already=schedules.find(x=>x.dateStr===newDate&&x.projId===s.projId&&x.itemId===s.itemId);
+  const already=schedules.find(x=>x.dateStr===newDate&&x.projId===s.projId&&x.itemIdx===s.itemIdx);
   if(already){showToast('⚠️ 이미 그 날짜에 일정이 있습니다');return;}
   s.dateStr=newDate;
   // 체크 상태 초기화 (날짜 바뀌면 완료 취소)
   if(s.checked){
     s.checked=false;
     const p=db.projects.find(x=>x.id===s.projId);
-    const item=getItem(p,s.itemId);
-    if(item){
+    if(p&&p.items[s.itemIdx]){
+      const item=p.items[s.itemIdx];
       const schedCnt=s.cnt||item.c||0;
       item.doneCnt=Math.max(0,(item.doneCnt||0)-schedCnt);
       item.doneDate='';
@@ -930,9 +878,9 @@ function renderDayView(){
 
   let tot=0,don=0;
   daySched.forEach(s=>{
-    const p=db.projects.find(x=>x.id===s.projId);const it=getItem(p,s.itemId);if(!p||!it)return;
-    const sc=s.cnt||it.c||0;tot+=sc;
-    const key=`${s.projId}:${s.itemId}:${ds}`;
+    const p=db.projects.find(x=>x.id===s.projId);if(!p||!p.items[s.itemIdx])return;
+    const sc=s.cnt||p.items[s.itemIdx].c||0;tot+=sc;
+    const key=`${s.projId}:${s.itemIdx}:${ds}`;
     const checked=_pendingChecks.hasOwnProperty(key)?_pendingChecks[key]:s.checked;
     if(checked)don+=sc;
   });
@@ -941,9 +889,10 @@ function renderDayView(){
   let html='';
   let needSave=false;
   daySched.forEach((s,si)=>{
-    const p=db.projects.find(x=>x.id===s.projId);const x=getItem(p,s.itemId);if(!p||!x)return;
+    const p=db.projects.find(x=>x.id===s.projId);if(!p||!p.items[s.itemIdx])return;
+    const x=p.items[s.itemIdx];
     const pname=p.branch?`${p.coop} ${p.branch}`:p.coop;
-    const key=`${s.projId}:${s.itemId}:${ds}`;
+    const key=`${s.projId}:${s.itemIdx}:${ds}`;
     // item.s가 done/partial 아니면 s.checked도 false로 동기화 (저장 포함)
     const actualChecked = s.checked && (x.s==='done'||x.s==='partial');
     if(s.checked !== actualChecked){ s.checked=actualChecked; needSave=true; }
@@ -1003,11 +952,12 @@ function saveDayDone(){
   load();
   let count=0, doneNames=[], cancelNames=[];
   Object.entries(_pendingChecks).forEach(([key,checked])=>{
-    const[projId,itemId,dateStr]=key.split(':');
-    const s=schedules.find(x=>x.projId===projId&&x.itemId===itemId&&x.dateStr===dateStr);
+    const[projId,itemIdx,dateStr]=key.split(':');
+    const ii=parseInt(itemIdx);
+    const s=schedules.find(x=>x.projId===projId&&x.itemIdx===ii&&x.dateStr===dateStr);
     if(!s)return;
-    const p=db.projects.find(x=>x.id===projId);const item=getItem(p,itemId);if(!p||!item)return;
-    const schedCnt=s.cnt||item.c||0;const totalCnt=item.c||0;
+    const p=db.projects.find(x=>x.id===projId);if(!p||!p.items[ii])return;
+    const item=p.items[ii];const schedCnt=s.cnt||item.c||0;const totalCnt=item.c||0;
     if(typeof item.doneCnt!=='number')item.doneCnt=0;
 
     if(checked&&!s.checked){
@@ -1042,8 +992,8 @@ function saveDayDone(){
 function toggleDone(dateStr,schedIdx){
   load();
   const daySched=getSchedForDate(dateStr);const s=daySched[schedIdx];if(!s)return;
-  const p=db.projects.find(x=>x.id===s.projId);const item=getItem(p,s.itemId);if(!p||!item)return;
-  const schedCnt=s.cnt||item.c||0;const totalCnt=item.c||0;
+  const p=db.projects.find(x=>x.id===s.projId);if(!p||!p.items[s.itemIdx])return;
+  const item=p.items[s.itemIdx];const schedCnt=s.cnt||item.c||0;const totalCnt=item.c||0;
   if(typeof item.doneCnt!=='number')item.doneCnt=0;
   if(s.checked){
     item.doneCnt=Math.max(0,item.doneCnt-schedCnt);
@@ -1090,8 +1040,8 @@ function renderWeekDetail(){
   let html=`<div style="padding:8px 14px 4px;font-size:12px;font-weight:700;color:var(--sub);background:var(--bg)">${title} · ${daySched.length}건</div>`;
   if(!daySched.length){html+=`<div class="sched-empty"><div class="ei">📅</div><p>이 날 일정이 없습니다</p></div>`;}
   else daySched.forEach((s,si)=>{
-    const p=db.projects.find(x=>x.id===s.projId);const x=getItem(p,s.itemId);if(!p||!x)return;
-    const pname=p.branch?`${p.coop} ${p.branch}`:p.coop;
+    const p=db.projects.find(x=>x.id===s.projId);if(!p||!p.items[s.itemIdx])return;
+    const x=p.items[s.itemIdx];const pname=p.branch?`${p.coop} ${p.branch}`:p.coop;
     html+=`<div class="sched-row ${s.checked?'done':''}"><div class="sched-chk ${s.checked?'done':''}" onclick="toggleDone('${ds}',${si})">${s.checked?'✓':''}</div><div class="sched-info"><div class="sched-name">${x.n}</div><div class="sched-meta">${ce(p.crop)} ${p.crop} · ${pname}</div>${x.m?`<div class="memo-badge">📌 ${x.m}</div>`:''}</div><div class="sched-cnt">${s.cnt||x.c}건</div><button class="sched-del" onclick="removeFromSched('${ds}',${si})">✕</button></div>`;
   });
   html+=`<div class="add-sched-btn" style="margin:10px 14px" onclick="openPickSheetForDate('${ds}')">＋ ${title} 일정 추가</div>`;
@@ -1115,8 +1065,8 @@ function renderMonthDetail(ds){
   const daySched=getSchedForDate(ds);let html=`<div class="month-detail-hdr">${title} · ${daySched.length}건 일정</div>`;
   if(!daySched.length){html+=`<div style="text-align:center;padding:20px;color:var(--hint);font-size:13px">일정이 없습니다</div>`;}
   else daySched.forEach((s,si)=>{
-    const p=db.projects.find(x=>x.id===s.projId);const x=getItem(p,s.itemId);if(!p||!x)return;
-    const pname=p.branch?`${p.coop} ${p.branch}`:p.coop;
+    const p=db.projects.find(x=>x.id===s.projId);if(!p||!p.items[s.itemIdx])return;
+    const x=p.items[s.itemIdx];const pname=p.branch?`${p.coop} ${p.branch}`:p.coop;
     html+=`<div class="sched-row ${s.checked?'done':''}"><div class="sched-chk ${s.checked?'done':''}" onclick="toggleDone('${ds}',${si});renderMonthView()">${s.checked?'✓':''}</div><div class="sched-info"><div class="sched-name">${x.n}</div><div class="sched-meta">${ce(p.crop)} ${p.crop} · ${pname}</div></div><div class="sched-cnt">${s.cnt||x.c}건</div><button class="sched-del" onclick="removeFromSched('${ds}',${si});renderMonthView()">✕</button></div>`;
   });
   html+=`<div class="add-sched-btn" style="margin:10px 14px" onclick="openPickSheetForDate('${ds}')">＋ 일정 추가</div>`;
@@ -1135,10 +1085,10 @@ function openPickSheetForDate(ds){
 function onPickDateChange(){pickTargetDate=document.getElementById('pick-date-input').value||todayStr();renderPickList();}
 function renderPickList(){
   load();const q=(document.getElementById('pick-q').value||'').trim();
-  const addedThisDate=new Set(schedules.filter(s=>s.dateStr===pickTargetDate).map(s=>`${s.projId}:${s.itemId}`));
+  const addedThisDate=new Set(schedules.filter(s=>s.dateStr===pickTargetDate).map(s=>`${s.projId}:${s.itemIdx}`));
   const addedOtherDate=new Map();
   schedules.filter(s=>s.dateStr!==pickTargetDate).forEach(s=>{
-    const key=`${s.projId}:${s.itemId}`;
+    const key=`${s.projId}:${s.itemIdx}`;
     if(!addedOtherDate.has(key)) addedOtherDate.set(key,s.dateStr);
   });
   let html='',count=0;
@@ -1146,7 +1096,7 @@ function renderPickList(){
     const pname=p.branch?`${p.coop} ${p.branch}`:p.coop;
     p.items.forEach((x,i)=>{
       if(q&&!x.n.includes(q))return;if(x.s==='done')return;count++;
-      const key=`${p.id}:${x.id}`;
+      const key=`${p.id}:${i}`;
       const isAddedHere=addedThisDate.has(key);
       const otherDate=addedOtherDate.get(key);
       const isPicked=pickedItems.has(key);
@@ -1157,7 +1107,7 @@ function renderPickList(){
         badge=`<span style="font-size:10px;color:var(--orange);font-weight:700"> · ${lbl} 일정→이 날로 변경</span>`;
       }
       const dimmed=isAddedHere; // 이 날 이미 추가된 건만 비활성
-      html+=`<div class="pick-item" style="${dimmed?'opacity:.4;pointer-events:none':''}" onclick="togglePick('${p.id}','${x.id}','${key}')">
+      html+=`<div class="pick-item" style="${dimmed?'opacity:.4;pointer-events:none':''}" onclick="togglePick('${p.id}',${i},'${key}')">
         <div class="pick-chk ${isPicked||isAddedHere?'on':''}">${isPicked||isAddedHere?'✓':''}</div>
         <div style="flex:1;min-width:0">
           <div style="font-size:14px;font-weight:600">${x.n}${badge}</div>
@@ -1170,9 +1120,9 @@ function renderPickList(){
   });
   document.getElementById('pick-list').innerHTML=count?html:'<div style="text-align:center;padding:24px;color:var(--hint);font-size:13px">계약자가 없습니다<br>먼저 프로젝트에 계약자를 추가하세요</div>';
 }
-function togglePick(projId,itemId,key){
+function togglePick(projId,itemIdx,key){
   load();
-  if(schedules.some(s=>s.dateStr===pickTargetDate&&s.projId===projId&&s.itemId===itemId))return;
+  if(schedules.some(s=>s.dateStr===pickTargetDate&&s.projId===projId&&s.itemIdx===itemIdx))return;
   if(pickedItems.has(key))pickedItems.delete(key);else pickedItems.add(key);
   renderPickList();
 }
@@ -1182,12 +1132,12 @@ function confirmPick(){
   // 다른 날짜에서 이동할 항목 목록
   const moves=[];
   pickedItems.forEach(key=>{
-    const[projId,itemId]=key.split(':');
-    const existing=schedules.find(s=>s.projId===projId&&s.itemId===itemId&&s.dateStr!==pickTargetDate);
+    const[projId,itemIdx]=key.split(':');const ii=parseInt(itemIdx);
+    const existing=schedules.find(s=>s.projId===projId&&s.itemIdx===ii&&s.dateStr!==pickTargetDate);
     if(existing){
       const p=db.projects.find(x=>x.id===projId);
       const lbl=getDateLabel(existing.dateStr)||fmtDateFull(existing.dateStr);
-      moves.push(`${getItem(p,itemId)?.n||''} (${lbl} → ${fmtDateFull(pickTargetDate)})`);
+      moves.push(`${p?.items[ii]?.n||''} (${lbl} → ${fmtDateFull(pickTargetDate)})`);
     }
   });
   if(moves.length){
@@ -1205,11 +1155,11 @@ function confirmPick(){
 function _doConfirmPick(){
   load();
   pickedItems.forEach(key=>{
-    const[projId,itemId]=key.split(':');
-    schedules=schedules.filter(s=>!(s.projId===projId&&s.itemId===itemId&&s.dateStr!==pickTargetDate));
-    if(!schedules.some(s=>s.dateStr===pickTargetDate&&s.projId===projId&&s.itemId===itemId)){
-      const p=db.projects.find(x=>x.id===projId);const it=getItem(p,itemId);const maxCnt=it?(+it.c||0):0;
-      schedules.push({dateStr:pickTargetDate,projId,itemId,cnt:maxCnt,checked:false});
+    const[projId,itemIdx]=key.split(':');const ii=parseInt(itemIdx);
+    schedules=schedules.filter(s=>!(s.projId===projId&&s.itemIdx===ii&&s.dateStr!==pickTargetDate));
+    if(!schedules.some(s=>s.dateStr===pickTargetDate&&s.projId===projId&&s.itemIdx===ii)){
+      const p=db.projects.find(x=>x.id===projId);const maxCnt=p&&p.items[ii]?(+p.items[ii].c||0):0;
+      schedules.push({dateStr:pickTargetDate,projId,itemIdx:ii,cnt:maxCnt,checked:false});
     }
   });
   save();closeOv('ov-pick');renderCurrentView();
@@ -1237,9 +1187,8 @@ function renderUpcoming(){
     const cropSet=new Set();
     list.forEach(s=>{
       const p=db.projects.find(x=>x.id===s.projId);
-      const it=getItem(p,s.itemId);
-      if(!p||!it)return;
-      const cnt=s.cnt||it.c||0;
+      if(!p||!p.items[s.itemIdx])return;
+      const cnt=s.cnt||p.items[s.itemIdx].c||0;
       tot+=cnt; if(s.checked)done+=cnt;
       cropSet.add(ce(p.crop)+' '+p.crop);
     });
@@ -1279,31 +1228,11 @@ function renderUpcoming(){
 }
 
 // ══ 프로젝트 목록 ══
-// ── 백업 권장 배너 ──
-function backupBannerHtml(){
-  if(!db.projects.length)return'';
-  if(sessionStorage.getItem('backup_snooze'))return'';
-  const last=parseInt(localStorage.getItem('last_export')||'0');
-  const stale=!last||(Date.now()-last)>7*86400000;
-  if(!stale)return'';
-  const days=last?Math.floor((Date.now()-last)/86400000):null;
-  const msg=last?`마지막 백업이 ${days}일 전이에요.`:'아직 백업한 적이 없어요.';
-  return `<div class="backup-banner">
-    <div class="bb-icon">💾</div>
-    <div class="bb-text"><b>데이터 백업 권장</b>${msg} 휴대폰 교체나 앱 데이터 삭제 시 복구가 불가능하니 파일로 저장해두세요.</div>
-    <div class="bb-actions">
-      <button class="bb-btn bb-go" onclick="openShare('all')">지금 백업</button>
-      <button class="bb-btn bb-snooze" onclick="snoozeBackup()">나중에</button>
-    </div>
-  </div>`;
-}
-function snoozeBackup(){sessionStorage.setItem('backup_snooze','1');renderList();}
-
 function renderList(){
   load();
   const el=document.getElementById('proj-list');
   if(!db.projects.length){el.innerHTML=`<div class="empty-proj"><div class="ei">📋</div><p>아직 프로젝트가 없습니다<br>위 버튼으로 새 프로젝트를 만드세요</p></div>`;return;}
-  el.innerHTML=backupBannerHtml()+db.projects.map(p=>{
+  el.innerHTML=db.projects.map(p=>{
     const tot=p.items.reduce((a,x)=>a+(+x.c||0),0);
     const don=p.items.reduce((a,x)=>a+(x.s==='done'?(+x.c||0):typeof x.doneCnt==='number'?x.doneCnt:0),0);
     const pct=tot?Math.round(don/tot*100):0;
@@ -1358,7 +1287,7 @@ function renderDet(){
     g.forEach(x=>{
       const sc=x.s==='done'?'done':x.s==='fail'?'fail':x.s==='partial'?'partial':'';
       const si=x.s==='done'?'✓':x.s==='fail'?'✕':x.s==='partial'?`${x.doneCnt||0}/${x.c}`:'';
-      const inSched=isInSched(curId,x.id);
+      const inSched=isInSched(curId,x._i);
       html+=`<div class="row ${sc}${inSched?' in-sched':''}" onclick="openItemSheet(${x._i})"><div class="sdot ${sc}">${si}</div><div class="r-main"><div class="r-name">${x.n}</div>${inSched?`<div class="r-sched-tag">📅 일정등록됨</div>`:''} ${x.m?`<div class="memo-badge">📌 ${x.m}</div>`:''}</div><div class="r-cnt">${x.c}건</div><div class="r-date">${fmtDate(x.d)}</div></div>`;
     });
   });
@@ -1438,11 +1367,15 @@ function doTransfer(targetId){
   const src=db.projects.find(x=>x.id===curId);if(!src)return;
   const tgt=db.projects.find(x=>x.id===targetId);if(!tgt)return;
   const item={...src.items[editItemIdx]};
-  const itemId=item.id;
   tgt.items.push(item);
-  // 계약자는 id를 유지하므로 일정은 projId만 바꿔주면 됨
-  schedules.forEach(s=>{if(s.projId===curId&&s.itemId===itemId)s.projId=targetId;});
+  const newIdx=tgt.items.length-1;
+  schedules.forEach(s=>{
+    if(s.projId===curId&&s.itemIdx===editItemIdx){s.projId=targetId;s.itemIdx=newIdx;}
+  });
   src.items.splice(editItemIdx,1);
+  schedules.forEach(s=>{
+    if(s.projId===curId&&s.itemIdx>editItemIdx) s.itemIdx--;
+  });
   save();
   closeOv('ov-transfer');
   const nm=tgt.branch?`${tgt.coop} ${tgt.branch}`:tgt.coop;
@@ -1469,10 +1402,8 @@ function saveItem(){
   else if(curSt2==='done')doneCnt=totalCnt;
   // 완료 아닌 경우 doneDate 자동 초기화
   const doneDate=curSt2==='done'?(document.getElementById('i-done-date').value||''):'';
+  const item={n:name,d:document.getElementById('i-date').value||'',c:totalCnt,s:finalStatus,doneCnt,doneDate,m:(document.getElementById('i-memo').value||'').trim()};
   load();const p=db.projects.find(x=>x.id===curId);if(!p)return;
-  // 수정 시 기존 id 보존(일정이 이 id를 참조), 신규는 새 id 부여
-  const keepId=(editItemIdx!==null&&p.items[editItemIdx])?p.items[editItemIdx].id:uid();
-  const item={id:keepId,n:name,d:document.getElementById('i-date').value||'',c:totalCnt,s:finalStatus,doneCnt,doneDate,m:(document.getElementById('i-memo').value||'').trim()};
   if(editItemIdx===null)p.items.push(item);else p.items[editItemIdx]=item;
   save();closeOv('ov-item');renderDet();
 }
@@ -1485,8 +1416,7 @@ function delItem(){
     okColor:'var(--red)',
     onOk:()=>{
       load();const p=db.projects.find(x=>x.id===curId);if(!p)return;
-      const item=p.items[editItemIdx];if(!item){closeOv('ov-item');return;}
-      schedules=schedules.filter(s=>!(s.projId===curId&&s.itemId===item.id));
+      schedules=schedules.filter(s=>!(s.projId===curId&&s.itemIdx===editItemIdx));
       p.items.splice(editItemIdx,1);save();closeOv('ov-item');renderDet();
     }
   });
@@ -1556,7 +1486,7 @@ function renderDoneList(){
     p.items.forEach((x,i)=>{
       // s=done이고 doneDate가 있는 항목만 표시
       if(x.s==='done'&&x.doneDate){
-        allDone.push({name:x.n,crop:p.crop,pname:nm,insp:p.insp||'',cnt:x.c||0,doneDate:x.doneDate,m:x.m||'',projId:p.id,itemId:x.id});
+        allDone.push({name:x.n,crop:p.crop,pname:nm,insp:p.insp||'',cnt:x.c||0,doneDate:x.doneDate,m:x.m||'',projId:p.id,itemIdx:i});
       }
     });
   });
@@ -1709,8 +1639,6 @@ function doExportFile(){
     :`조사관리_${projects.length}개_${now.getMonth()+1}${now.getDate()}.json`;
   a.href=url;a.download=fname;a.click();
   URL.revokeObjectURL(url);
-  localStorage.setItem('last_export',Date.now());
-  sessionStorage.removeItem('backup_snooze');
   showToast(`📁 ${projects.length}개 프로젝트 저장됐습니다`);
 }
 
@@ -1748,9 +1676,6 @@ function confirmImport(){
   if(!_importData)return;
   load();
   const projects=(_importData.projects||(_importData.db||{projects:[]}).projects)||[];
-  const impSched=_importData.schedules||[];
-  // 가져온 데이터도 id 체계로 정규화(구버전 파일 호환)
-  ensureIds(projects,impSched);
   const exist=new Set(db.projects.map(x=>x.id));
   let added=0,updated=0;
   const addedNames=[];
@@ -1758,7 +1683,8 @@ function confirmImport(){
     if(!exist.has(p.id)){db.projects.unshift(p);added++;addedNames.push(p.crop+' — '+(p.branch?`${p.coop} ${p.branch}`:p.coop));}
     else{const i=db.projects.findIndex(x=>x.id===p.id);if(i>=0){db.projects[i]=p;updated++;}}
   });
-  impSched.forEach(s=>{if(s.itemId&&!schedules.some(x=>x.dateStr===s.dateStr&&x.projId===s.projId&&x.itemId===s.itemId))schedules.push(s);});
+  const impSched=_importData.schedules||[];
+  impSched.forEach(s=>{if(!schedules.some(x=>x.dateStr===s.dateStr&&x.projId===s.projId&&x.itemIdx===s.itemIdx))schedules.push(s);});
   save();_importData=null;closeOv('ov-share');
   let msg=`✅ `;
   if(added) msg+=`${addedNames.slice(0,2).join(', ')}${addedNames.length>2?' 등':''} 추가됨`;
@@ -1861,6 +1787,8 @@ load();
     _curTab=i;
     document.querySelectorAll('.stab').forEach((t,j)=>t.classList.toggle('on',i===j));
     [0,1,2].forEach(j=>{const p=document.getElementById(`tab-pane-${j}`);if(p)p.classList.toggle('on',i===j);});
+    const sl=document.getElementById('tab-slider');
+    if(sl){sl.style.transition='none';sl.style.transform=`translateX(${-i*100}%)`;requestAnimationFrame(()=>{sl.style.transition='';});}
     document.getElementById('header-sub').textContent=HEADER_SUBS[i];
   }
   if(lastScreen==='proj'&&lastProjId){
@@ -1872,45 +1800,51 @@ load();
   jumpTo(0);renderList();
 })();
 
-// ══ 스와이프로 탭 전환 (손가락 추적 + 스프링백) ══
+// ══ 스와이프로 탭 전환 (계산기와 동일: 실시간 드래그 + 부드러운 릴리즈) ══
 (function(){
-  let _sx=0,_sy=0,_dragging=false,_vertLocked=false,_pane=null;
+  let _sx=0,_sy=0,_dragging=false,_vertLocked=false;
+  const TABS=3;
+  const getSlider=()=>document.getElementById('tab-slider');
   function isBlocked(){return!!(document.querySelector('.ov.on,.capture-ov.on')||document.getElementById('scr-det').classList.contains('on'));}
-  function clearPane(p){if(!p)return;p.style.transition='';p.style.transform='';p.style.opacity='';p.style.willChange='';}
+  // 가로 스크롤되는 영역(완료 필터바)에서는 탭 스와이프 막기
+  function inHScroll(el){return el&&el.closest&&el.closest('.done-toolbar');}
+
   document.addEventListener('touchstart',e=>{
-    if(isBlocked())return;
+    if(isBlocked()||inHScroll(e.target))return;
     _sx=e.touches[0].clientX;_sy=e.touches[0].clientY;
     _dragging=false;_vertLocked=false;
-    _pane=document.getElementById(`tab-pane-${_curTab}`);
+    const s=getSlider();if(s)s.style.transition='none';
   },{passive:true});
+
   document.addEventListener('touchmove',e=>{
     if(isBlocked())return;
     const dx=e.touches[0].clientX-_sx,dy=e.touches[0].clientY-_sy;
     if(!_dragging&&!_vertLocked){
       if(Math.abs(dy)>Math.abs(dx)+5){_vertLocked=true;return;}
-      if(Math.abs(dx)>8){_dragging=true;if(_pane){clearTimeout(_animTimers[_pane.id]);_pane.style.transition='none';_pane.style.willChange='transform';}}
+      if(Math.abs(dx)>8){_dragging=true;const s=getSlider();if(s)s.classList.add('dragging');}
     }
-    if(_dragging&&_pane){
-      // 가장자리는 강하게 감쇠(고무줄), 그 외엔 가볍게 따라옴
-      const edge=(_curTab===0&&dx>0)||(_curTab===2&&dx<0);
-      const d=dx*(edge?0.25:0.6);
-      _pane.style.transform=`translateX(${d}px)`;
-      _pane.style.opacity=String(Math.max(0.6,1-Math.abs(d)/700));
-    }
+    if(!_dragging||_vertLocked)return;
+    const s=getSlider();if(!s)return;
+    const base=-_curTab*100;
+    let pct=(dx/window.innerWidth)*100;
+    if(_curTab===0&&dx>0)        pct*=0.2;   // 양 끝에서 저항
+    if(_curTab===TABS-1&&dx<0)   pct*=0.2;
+    s.style.transform=`translateX(${base+pct}%)`;
   },{passive:true});
+
   document.addEventListener('touchend',e=>{
-    const pane=_pane;_pane=null;
-    if(!_dragging||_vertLocked){_dragging=false;clearPane(pane);return;}
-    _dragging=false;
+    if(!_dragging||_vertLocked){_dragging=false;return;}
     const dx=e.changedTouches[0].clientX-_sx;
-    if(dx<-55&&_curTab<2){switchMain(_curTab+1);}
-    else if(dx>55&&_curTab>0){switchMain(_curTab-1);}
-    else if(pane){ // 임계값 미달 → 제자리로 스프링백
-      pane.style.transition='transform .22s cubic-bezier(.22,.61,.36,1),opacity .2s ease';
-      pane.style.transform='translateX(0)';
-      pane.style.opacity='1';
-      setTimeout(()=>clearPane(pane),240);
+    const s=getSlider();
+    if(dx<-50&&_curTab<TABS-1)      switchMain(_curTab+1);
+    else if(dx>50&&_curTab>0)       switchMain(_curTab-1);
+    else if(s){                      // 임계값 미달 → 제자리 스냅백
+      s.style.transition='transform .3s cubic-bezier(.4,0,.2,1)';
+      s.style.transform=`translateX(${-_curTab*100}%)`;
+      clearTimeout(_slideTimer);
+      _slideTimer=setTimeout(()=>s.classList.remove('dragging'),340);
     }
+    _dragging=false;
   },{passive:true});
 })();
 
