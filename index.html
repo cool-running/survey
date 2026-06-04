@@ -162,7 +162,7 @@ body{font-family:-apple-system,'Noto Sans KR',sans-serif;background:var(--bg);co
 .month-dow-row{display:grid;grid-template-columns:repeat(7,1fr);background:var(--card);border-bottom:1px solid var(--border);padding:4px 0}
 .mdow{text-align:center;font-size:11px;font-weight:700;color:var(--sub);padding:4px 0}
 .month-cal{display:grid;grid-template-columns:repeat(7,1fr);background:var(--bg);gap:1px}
-.mday{background:var(--card);min-height:52px;padding:4px 3px;cursor:pointer}
+.mday{background:var(--card);min-height:58px;padding:5px 3px;cursor:pointer}
 .mday.other-month .md-num{opacity:.35}
 .mday.today .md-num{background:var(--green);color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;margin:0 auto}
 .mday.sel{background:#e8faf3}
@@ -369,40 +369,11 @@ body{font-family:-apple-system,'Noto Sans KR',sans-serif;background:var(--bg);co
 
 <!-- 탭1: 조사일정 -->
 <div class="tab-pane" id="tab-pane-1">
-  <div class="view-tabs" id="view-tabs-inner">
-    <div class="view-seg">
-      <div class="vtab on" id="vtab0" onclick="switchView(0)">일</div>
-      <div class="vtab"    id="vtab1" onclick="switchView(1)">주</div>
-      <div class="vtab"    id="vtab2" onclick="switchView(2)">월</div>
-    </div>
-  </div>
-  <div id="day-banner-outer" class="day-banner" style="position:sticky;top:var(--vth,38px);z-index:85;background:var(--bg)">
-    <div class="day-banner-nav" onclick="navDay(-1)">‹</div>
-    <div class="day-banner-center">
-      <div class="day-banner-lbl" id="dn-lbl">오늘</div>
-      <div class="day-banner-date" id="dn-date">-</div>
-      <div class="day-banner-dow" id="dn-dow">-</div>
-    </div>
-    <div class="day-today-btn" onclick="goToday()">오늘</div>
-    <div class="day-banner-nav" onclick="navDay(1)">›</div>
-  </div>
-  <div id="view-day">
-    <div class="day-summary" id="day-summary"></div>
-    <div id="sched-list"></div>
-    <div class="add-sched-btn" onclick="openPickSheet()">＋ 조사 일정 추가</div>
-  </div>
-  <!-- 완료 저장 버튼 (view-day 밖에 위치해야 재렌더 시 안 날아감) -->
-  <div class="sched-save-bar" id="sched-save-bar">
-    <button class="sched-save-btn" onclick="saveDayDone()">✓ 완료 저장</button>
-  </div>
-  <div id="view-week" style="display:none">
-    <div class="week-head" id="week-head"></div>
-    <div id="week-detail"></div>
-  </div>
-  <div id="view-month" style="display:none">
+  <div id="view-month">
     <div class="month-nav">
       <div class="month-nav-btn" onclick="navMonth(-1)">‹</div>
       <div class="month-nav-label" id="month-label">-</div>
+      <div class="day-today-btn" onclick="goMonthToday()" style="margin-right:6px">오늘</div>
       <div class="month-nav-btn" onclick="navMonth(1)">›</div>
     </div>
     <div class="month-dow-row">
@@ -775,18 +746,17 @@ function goProjects(){
 }
 
 // ══ 뷰 전환 (일/주/월) ══
-function switchView(i){
-  curView=i;
-  ['vtab0','vtab1','vtab2'].forEach((id,j)=>document.getElementById(id).classList.toggle('on',i===j));
-  document.getElementById('view-day').style.display=i===0?'':'none';
-  document.getElementById('view-week').style.display=i===1?'':'none';
-  document.getElementById('view-month').style.display=i===2?'':'none';
-  const banner=document.getElementById('day-banner-outer');
-  if(banner) banner.style.display=i===0?'flex':'none';
-  renderCurrentView();
-}
+// 일정 탭은 월 달력 한 가지만 사용 (일/주 뷰 제거)
+function switchView(i){ renderMonthView(); }
 function _updateBanner(){} // 더미 (하위 호환용)
-function renderCurrentView(){if(curView===0)renderDayView();else if(curView===1)renderWeekView();else renderMonthView();}
+function renderCurrentView(){ renderMonthView(); }
+function goMonthToday(){
+  const t=new Date();
+  curMonthYear=t.getFullYear();
+  curMonthMonth=t.getMonth();
+  curMonthSelDate=todayStr();
+  renderMonthView();
+}
 
 // ══ 토스트 ══
 let _toastTimer=null;
@@ -861,6 +831,7 @@ function navDay(d){curDayOffset+=d;_pendingChecks={};renderDayView();}
 function goToday(){curDayOffset=0;_pendingChecks={};renderDayView();}
 
 function renderDayView(){
+  if(!document.getElementById('sched-list')) return; // 일 뷰 제거됨 → 안전 종료
   load();
   const today=new Date();today.setHours(0,0,0,0);
   const cur=new Date(today);cur.setDate(cur.getDate()+curDayOffset);
@@ -1023,16 +994,17 @@ function toggleDone(dateStr,schedIdx){
     if(item.doneCnt>=totalCnt&&!item.doneDate) item.doneDate=dateStr;
   }
   item.s=item.doneCnt>=totalCnt?'done':item.doneCnt>0?'partial':'pending';
-  save();renderDayView();if(curId===s.projId)renderDet();
+  save();renderCurrentView();if(curId===s.projId)renderDet();
 }
 function removeFromSched(dateStr,schedIdx){
   load();const daySched=getSchedForDate(dateStr);const s=daySched[schedIdx];if(!s)return;
-  schedules.splice(schedules.indexOf(s),1);save();renderDayView();
+  schedules.splice(schedules.indexOf(s),1);save();renderCurrentView();
 }
 
 // ══ 주 뷰 ══
 function navWeek(d){curWeekOffset+=d;renderWeekView();}
 function renderWeekView(){
+  if(!document.getElementById("week-head")) return; // 주 뷰 제거됨
   load();
   const today=new Date();today.setHours(0,0,0,0);
   const weekStart=new Date(today);weekStart.setDate(today.getDate()-today.getDay()+curWeekOffset*7);
@@ -1069,6 +1041,7 @@ function renderWeekDetail(){
 function navMonth(d){curMonthMonth+=d;if(curMonthMonth>11){curMonthMonth=0;curMonthYear++;}if(curMonthMonth<0){curMonthMonth=11;curMonthYear--;}renderMonthView();}
 function renderMonthView(){
   load();document.getElementById('month-label').textContent=`${curMonthYear}년 ${curMonthMonth+1}월`;
+  if(!curMonthSelDate) curMonthSelDate=todayStr();  // 처음 들어오면 오늘 자동 선택
   const firstDay=new Date(curMonthYear,curMonthMonth,1);const lastDay=new Date(curMonthYear,curMonthMonth+1,0);
   const startDow=firstDay.getDay();const today=todayStr();let html='';
   for(let i=0;i<startDow;i++){const d=new Date(curMonthYear,curMonthMonth,1-startDow+i);const ds=dateToStr(d);const cnt=getSchedForDate(ds).length;html+=`<div class="mday other-month" onclick="selectMonthDay('${ds}')"><div class="md-num">${d.getDate()}</div><div class="md-dot${cnt?' on':''}"></div>${cnt?`<div class="md-cnt">${cnt}</div>`:''}</div>`;}
@@ -1078,15 +1051,19 @@ function renderMonthView(){
 }
 function selectMonthDay(ds){curMonthSelDate=ds;renderMonthView();}
 function renderMonthDetail(ds){
-  const d=strToDate(ds);const lbl=getDateLabel(ds);const title=`${d.getMonth()+1}/${d.getDate()}(${DAY_KO[d.getDay()]})${lbl?' · '+lbl:''}`;
-  const daySched=getSchedForDate(ds);let html=`<div class="month-detail-hdr">${title} · ${daySched.length}건 일정</div>`;
-  if(!daySched.length){html+=`<div style="text-align:center;padding:20px;color:var(--hint);font-size:13px">일정이 없습니다</div>`;}
+  const d=strToDate(ds);const lbl=getDateLabel(ds);
+  const title=`${d.getFullYear()}.${d.getMonth()+1}.${d.getDate()} (${DAY_KO[d.getDay()]})${lbl?' · '+lbl:''}`;
+  const daySched=getSchedForDate(ds);
+  let totCnt=0;
+  daySched.forEach(s=>{const p=db.projects.find(x=>x.id===s.projId);if(p&&p.items[s.itemIdx])totCnt+=(s.cnt||p.items[s.itemIdx].c||0);});
+  let html=`<div class="month-detail-hdr">📅 ${title} · ${daySched.length}명 / ${totCnt}건</div>`;
+  if(!daySched.length){html+=`<div style="text-align:center;padding:24px 20px;color:var(--hint);font-size:13px;line-height:1.8">이 날 일정이 없습니다<br>아래 버튼으로 계약자를 추가하세요</div>`;}
   else daySched.forEach((s,si)=>{
     const p=db.projects.find(x=>x.id===s.projId);if(!p||!p.items[s.itemIdx])return;
     const x=p.items[s.itemIdx];const pname=p.branch?`${p.coop} ${p.branch}`:p.coop;
-    html+=`<div class="sched-row ${s.checked?'done':''}"><div class="sched-chk ${s.checked?'done':''}" onclick="toggleDone('${ds}',${si});renderMonthView()">${s.checked?'✓':''}</div><div class="sched-info"><div class="sched-name">${x.n}</div><div class="sched-meta">${ce(p.crop)} ${p.crop} · ${pname}</div></div><div class="sched-cnt">${s.cnt||x.c}건</div><button class="sched-del" onclick="removeFromSched('${ds}',${si});renderMonthView()">✕</button></div>`;
+    html+=`<div class="sched-row ${s.checked?'done':''}"><div class="sched-chk ${s.checked?'done':''}" onclick="toggleDone('${ds}',${si});renderMonthView()">${s.checked?'✓':''}</div><div class="sched-info"><div class="sched-name">${x.n}</div><div class="sched-meta">${ce(p.crop)} ${p.crop} · ${pname}</div>${x.m?`<div class="memo-badge">📌 ${x.m}</div>`:''}</div><div class="sched-cnt">${s.cnt||x.c}건</div><button class="sched-del" onclick="removeFromSched('${ds}',${si});renderMonthView()">✕</button></div>`;
   });
-  html+=`<div class="add-sched-btn" style="margin:10px 14px" onclick="openPickSheetForDate('${ds}')">＋ 일정 추가</div>`;
+  html+=`<div class="add-sched-btn" style="margin:12px 14px" onclick="openPickSheetForDate('${ds}')">＋ ${d.getMonth()+1}/${d.getDate()} 일정 추가</div>`;
   document.getElementById('month-detail').innerHTML=html;
 }
 
