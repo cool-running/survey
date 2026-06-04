@@ -21,7 +21,7 @@
   --r:12px;--rs:8px;
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-body{font-family:-apple-system,'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text);font-size:14px;min-height:100vh;-webkit-user-select:none;user-select:none;padding-bottom:calc(56px + env(safe-area-inset-bottom,0px))}
+body{font-family:-apple-system,'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text);font-size:14px;min-height:100vh;-webkit-user-select:none;user-select:none;overflow-x:hidden;padding-bottom:calc(56px + env(safe-area-inset-bottom,0px))}
 
 /* ── 헤더 ── */
 .header{background:var(--green);color:#fff;padding:14px 14px 12px;display:flex;align-items:center;gap:10px}
@@ -756,26 +756,52 @@ function goCalc(){
   showToast('🌿 피해율계산기 연동 준비 중!');
 }
 
+let _animTimers={};
+function animateIn(p,dir){
+  clearTimeout(_animTimers[p.id]);
+  p.style.transition='none';
+  p.style.transform=`translateX(${dir*34}px)`;
+  p.style.opacity='0';
+  p.style.willChange='transform';
+  void p.offsetWidth; // 시작 상태 확정(리플로우) — 콘텐츠 레이아웃 비용을 여기서 미리 치름
+  requestAnimationFrame(()=>{
+    p.style.transition='transform .26s cubic-bezier(.22,.61,.36,1),opacity .2s ease';
+    p.style.transform='translateX(0)';
+    p.style.opacity='1';
+    _animTimers[p.id]=setTimeout(()=>{
+      // 정지 상태에선 인라인 transform 제거(스티키 동작을 원상태로 유지)
+      p.style.transition='';p.style.transform='';p.style.opacity='';p.style.willChange='';
+    },300);
+  });
+}
 function switchMain(i){
   const prev=_curTab;
   _curTab=i;
   document.querySelectorAll('.stab').forEach((t,j)=>t.classList.toggle('on',i===j));
-  [0,1,2].forEach(j=>{
-    const p=document.getElementById(`tab-pane-${j}`);
-    if(!p)return;
-    p.classList.remove('on','slide-in-right','slide-in-left');
-    if(i===j){
-      p.classList.add('on');
-      p.classList.add(i>prev?'slide-in-right':'slide-in-left');
-    }
-  });
   const saveBar=document.getElementById('sched-save-bar');
   if(saveBar&&i!==1) saveBar.classList.remove('on');
   document.getElementById('scr-det').classList.remove('on');
   document.getElementById('header-sub').textContent=HEADER_SUBS[i];
+  // 1) 콘텐츠 먼저 렌더 (애니메이션과 분리해 끊김 방지)
   if(i===0){localStorage.setItem('last_screen','list');renderList();}
   else if(i===1){localStorage.setItem('last_screen','sched');renderCurrentView();}
   else{localStorage.setItem('last_screen','done');renderDoneList();}
+  // 2) 패널 표시 전환 + 슬라이드 인
+  const dir=i>prev?1:-1;
+  [0,1,2].forEach(j=>{
+    const p=document.getElementById(`tab-pane-${j}`);
+    if(!p)return;
+    if(i===j){
+      p.classList.add('on');
+      clearTimeout(_animTimers[p.id]);
+      if(i!==prev) animateIn(p,dir);
+      else{p.style.transition='';p.style.transform='';p.style.opacity='';p.style.willChange='';}
+    } else {
+      p.classList.remove('on');
+      clearTimeout(_animTimers[p.id]);
+      p.style.transition='';p.style.transform='';p.style.opacity='';p.style.willChange='';
+    }
+  });
 }
 function goProjects(){
   localStorage.setItem('last_screen','list');
@@ -1846,29 +1872,45 @@ load();
   jumpTo(0);renderList();
 })();
 
-// ══ 스와이프로 탭 전환 ══
+// ══ 스와이프로 탭 전환 (손가락 추적 + 스프링백) ══
 (function(){
-  let _sx=0,_sy=0,_dragging=false,_vertLocked=false;
+  let _sx=0,_sy=0,_dragging=false,_vertLocked=false,_pane=null;
   function isBlocked(){return!!(document.querySelector('.ov.on,.capture-ov.on')||document.getElementById('scr-det').classList.contains('on'));}
+  function clearPane(p){if(!p)return;p.style.transition='';p.style.transform='';p.style.opacity='';p.style.willChange='';}
   document.addEventListener('touchstart',e=>{
     if(isBlocked())return;
     _sx=e.touches[0].clientX;_sy=e.touches[0].clientY;
     _dragging=false;_vertLocked=false;
+    _pane=document.getElementById(`tab-pane-${_curTab}`);
   },{passive:true});
   document.addEventListener('touchmove',e=>{
     if(isBlocked())return;
     const dx=e.touches[0].clientX-_sx,dy=e.touches[0].clientY-_sy;
     if(!_dragging&&!_vertLocked){
       if(Math.abs(dy)>Math.abs(dx)+5){_vertLocked=true;return;}
-      if(Math.abs(dx)>8)_dragging=true;
+      if(Math.abs(dx)>8){_dragging=true;if(_pane){clearTimeout(_animTimers[_pane.id]);_pane.style.transition='none';_pane.style.willChange='transform';}}
+    }
+    if(_dragging&&_pane){
+      // 가장자리는 강하게 감쇠(고무줄), 그 외엔 가볍게 따라옴
+      const edge=(_curTab===0&&dx>0)||(_curTab===2&&dx<0);
+      const d=dx*(edge?0.25:0.6);
+      _pane.style.transform=`translateX(${d}px)`;
+      _pane.style.opacity=String(Math.max(0.6,1-Math.abs(d)/700));
     }
   },{passive:true});
   document.addEventListener('touchend',e=>{
-    if(!_dragging||_vertLocked){_dragging=false;return;}
-    const dx=e.changedTouches[0].clientX-_sx;
-    if(dx<-50&&_curTab<2)switchMain(_curTab+1);
-    else if(dx>50&&_curTab>0)switchMain(_curTab-1);
+    const pane=_pane;_pane=null;
+    if(!_dragging||_vertLocked){_dragging=false;clearPane(pane);return;}
     _dragging=false;
+    const dx=e.changedTouches[0].clientX-_sx;
+    if(dx<-55&&_curTab<2){switchMain(_curTab+1);}
+    else if(dx>55&&_curTab>0){switchMain(_curTab-1);}
+    else if(pane){ // 임계값 미달 → 제자리로 스프링백
+      pane.style.transition='transform .22s cubic-bezier(.22,.61,.36,1),opacity .2s ease';
+      pane.style.transform='translateX(0)';
+      pane.style.opacity='1';
+      setTimeout(()=>clearPane(pane),240);
+    }
   },{passive:true});
 })();
 
