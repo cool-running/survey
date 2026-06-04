@@ -10,6 +10,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>손해평가 도우미</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <link rel="manifest" href="./manifest.json">
 <link rel="apple-touch-icon" href="./icon-192.png">
 <style>
@@ -21,10 +22,10 @@
   --r:12px;--rs:8px;
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-body{font-family:-apple-system,'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text);font-size:14px;height:100vh;overflow:hidden;-webkit-user-select:none;user-select:none}
+body{font-family:-apple-system,'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text);font-size:14px;min-height:100vh;-webkit-user-select:none;user-select:none;padding-bottom:calc(56px + env(safe-area-inset-bottom,0px))}
 
 /* ── 헤더 ── */
-.header{background:var(--green);color:#fff;padding:14px 14px 12px;display:flex;align-items:center;gap:10px;position:fixed;top:0;left:0;right:0;z-index:210}
+.header{background:var(--green);color:#fff;padding:14px 14px 12px;display:flex;align-items:center;gap:10px}
 .header-icon{width:32px;height:32px;background:rgba(255,255,255,.2);border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
 .header h1{font-size:17px;font-weight:700;flex:1}
 .header-sub{font-size:11px;opacity:.7;margin-top:2px}
@@ -37,15 +38,17 @@ body{font-family:-apple-system,'Noto Sans KR',sans-serif;background:var(--bg);co
 .tab.on{color:var(--green)}
 
 /* ── 상단 서브 탭바 (관리/일정/완료) ── */
-.sub-tab-bar{display:flex;background:var(--card);border-bottom:1px solid var(--border);position:fixed;top:var(--hh,58px);left:0;right:0;z-index:205}
+.sub-tab-bar{display:flex;background:var(--card);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100}
 .stab{flex:1;padding:10px 2px 9px;text-align:center;font-size:12px;font-weight:600;color:var(--hint);border-bottom:2.5px solid transparent;cursor:pointer;touch-action:manipulation;transition:color .2s,border-color .2s,background .2s}
 .stab.on{color:var(--green);border-bottom-color:var(--green);background:#e8faf3}
 
 /* ── 슬라이더 ── */
-/* ── 슬라이더: 화면에 꽉 차는 고정 칸, 각 패널이 내부에서만 스크롤 (body는 스크롤 안 함 → 오바/빈화면 방지) ── */
-.tab-slider-wrap{position:fixed;top:var(--topc,98px);bottom:var(--botc,56px);left:0;right:0;overflow:hidden}
-.tab-slider{display:flex;height:100%;transition:transform .3s cubic-bezier(.4,0,.2,1);will-change:transform}
-.tab-pane{flex:0 0 100%;width:100%;min-width:0;height:100%;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+.tab-pane{display:none;animation:none}
+.tab-pane.on{display:block}
+.tab-pane.slide-in-right{animation:slideInRight .28s cubic-bezier(.4,0,.2,1)}
+.tab-pane.slide-in-left{animation:slideInLeft .28s cubic-bezier(.4,0,.2,1)}
+@keyframes slideInRight{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:translateX(0)}}
+@keyframes slideInLeft{from{opacity:0;transform:translateX(-40px)}to{opacity:1;transform:translateX(0)}}
 
 /* ── 예정 일정 위젯 ── */
 .upcoming-wrap{background:var(--card);border-bottom:1px solid var(--border);padding:10px 14px 6px}
@@ -97,11 +100,9 @@ body{font-family:-apple-system,'Noto Sans KR',sans-serif;background:var(--bg);co
 .empty-proj p{font-size:13px;line-height:1.9}
 
 /* ══ 탭1: 조사일정 ══ */
-.view-tabs{background:var(--card);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:90;padding:8px 14px}
-.view-seg{display:flex;background:#eef0ec;border-radius:11px;padding:3px;gap:3px}
-.vtab{flex:1;padding:8px 4px;text-align:center;font-size:13px;font-weight:700;color:var(--sub);border-radius:8px;cursor:pointer;transition:background .18s,color .18s,box-shadow .18s;-webkit-user-select:none;user-select:none}
-.vtab.on{background:var(--green);color:#fff;box-shadow:0 1px 5px rgba(29,158,117,.35)}
-.vtab:active{transform:scale(.97)}
+.view-tabs{display:flex;background:var(--card);border-bottom:1px solid var(--border);position:sticky;top:106px;z-index:90}
+.vtab{flex:1;padding:9px 4px;text-align:center;font-size:13px;font-weight:600;color:var(--hint);border-bottom:2.5px solid transparent;cursor:pointer}
+.vtab.on{color:var(--green);border-bottom-color:var(--green)}
 /* 일 뷰 날짜 배너 */
 .day-banner{display:flex;align-items:center;padding:10px 14px 8px;gap:10px;background:var(--bg)}
 .day-banner-nav{width:34px;height:34px;border-radius:50%;background:var(--card);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:20px;cursor:pointer;flex-shrink:0}
@@ -113,7 +114,7 @@ body{font-family:-apple-system,'Noto Sans KR',sans-serif;background:var(--bg);co
 .day-banner-dow{font-size:12px;color:var(--sub);margin-top:1px}
 .day-today-btn{padding:5px 12px;border-radius:20px;background:var(--green);color:#fff;font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0}
 
-.day-summary{display:grid;grid-template-columns:repeat(4,25%);width:100%;background:var(--bg)}
+.day-summary{display:grid;grid-template-columns:repeat(4,25%);width:100%;position:sticky;top:230px;z-index:80;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
 .dscard{background:rgba(255,255,255,.72);padding:10px 4px;text-align:center;border-right:.5px solid rgba(216,214,206,.6);border-bottom:.5px solid rgba(216,214,206,.6)}
 .dscard:first-child{border-left:.5px solid rgba(216,214,206,.6)}
 .dscard-val{font-size:17px;font-weight:800;line-height:1}
@@ -136,7 +137,7 @@ body{font-family:-apple-system,'Noto Sans KR',sans-serif;background:var(--bg);co
 .sched-cnt{font-size:12px;font-weight:700;color:var(--sub);flex-shrink:0;text-align:right}
 
 /* 완료 저장 버튼 */
-.sched-save-bar{display:none;position:sticky;bottom:0;padding:10px 14px;background:rgba(255,255,255,.96);backdrop-filter:blur(10px);border-top:1px solid var(--border);z-index:90}
+.sched-save-bar{display:none;position:sticky;bottom:calc(58px + env(safe-area-inset-bottom,0px));padding:10px 14px;background:rgba(255,255,255,.96);backdrop-filter:blur(10px);border-top:1px solid var(--border);z-index:90}
 .sched-save-bar.on{display:block}
 .sched-save-btn{width:100%;padding:13px;background:var(--green);color:#fff;border-radius:12px;font-size:15px;font-weight:700;border:none;cursor:pointer;font-family:inherit;box-shadow:0 3px 12px rgba(29,158,117,.35)}
 
@@ -148,7 +149,7 @@ body{font-family:-apple-system,'Noto Sans KR',sans-serif;background:var(--bg);co
 .add-sched-btn:active{opacity:.85}
 
 /* 주 뷰 */
-.week-head{display:flex;background:var(--card);border-bottom:1px solid var(--border);position:sticky;top:var(--vth,38px);z-index:80}
+.week-head{display:flex;background:var(--card);border-bottom:1px solid var(--border);position:sticky;top:88px;z-index:80}
 .wh-cell{flex:0 0 calc(100%/7);text-align:center;padding:7px 2px;font-size:11px;font-weight:600;color:var(--sub);cursor:pointer;border-bottom:2px solid transparent}
 .wh-cell.today{color:var(--green)}.wh-cell.has-item{color:var(--text)}.wh-cell.sel{border-bottom-color:var(--green);color:var(--green)}
 .wh-date{font-size:13px;font-weight:700;display:block;line-height:1.4}
@@ -162,7 +163,7 @@ body{font-family:-apple-system,'Noto Sans KR',sans-serif;background:var(--bg);co
 .month-dow-row{display:grid;grid-template-columns:repeat(7,1fr);background:var(--card);border-bottom:1px solid var(--border);padding:4px 0}
 .mdow{text-align:center;font-size:11px;font-weight:700;color:var(--sub);padding:4px 0}
 .month-cal{display:grid;grid-template-columns:repeat(7,1fr);background:var(--bg);gap:1px}
-.mday{background:var(--card);min-height:58px;padding:5px 3px;cursor:pointer}
+.mday{background:var(--card);min-height:52px;padding:4px 3px;cursor:pointer}
 .mday.other-month .md-num{opacity:.35}
 .mday.today .md-num{background:var(--green);color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;margin:0 auto}
 .mday.sel{background:#e8faf3}
@@ -174,7 +175,7 @@ body{font-family:-apple-system,'Noto Sans KR',sans-serif;background:var(--bg);co
 .month-detail-hdr{padding:8px 14px 4px;font-size:12px;font-weight:700;color:var(--sub);background:var(--bg)}
 
 /* ══ 탭2: 완료내역 ══ */
-.done-toolbar{display:flex;gap:8px;padding:10px 14px 8px;align-items:center;background:var(--card);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:90;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.done-toolbar{display:flex;gap:8px;padding:10px 14px 8px;align-items:center;background:var(--card);border-bottom:1px solid var(--border);position:sticky;top:106px;z-index:90;overflow-x:auto;-webkit-overflow-scrolling:touch}
 .done-toolbar::-webkit-scrollbar{display:none}
 .dfchip{height:30px;padding:0 14px;border-radius:20px;border:1.5px solid var(--border);background:var(--card);color:var(--sub);font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0;display:flex;align-items:center}
 .dfchip.on{background:var(--green);border-color:var(--green);color:#fff}
@@ -334,6 +335,28 @@ body{font-family:-apple-system,'Noto Sans KR',sans-serif;background:var(--bg);co
 .cap-sum-val.g{color:var(--green)}.cap-sum-val.r{color:var(--red)}.cap-sum-val.b{color:var(--blue)}
 .cap-sum-lbl{font-size:9px;color:#666;margin-top:2px;font-weight:600}
 .cap-footer{font-size:10px;color:#aaa;text-align:right;margin-top:6px}
+
+/* ── 프로젝트 선택(삭제) 모드 ── */
+.proj-sel-chk{width:24px;height:24px;border-radius:50%;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;color:#fff;background:#fff;transition:all .15s;align-self:center}
+.proj-sel-chk.on{background:var(--green);border-color:var(--green)}
+.proj-card.selmode.sel{box-shadow:0 0 0 2px var(--green) inset}
+.sel-action-bar{position:fixed;left:0;right:0;bottom:calc(56px + env(safe-area-inset-bottom,0px));background:rgba(255,255,255,.97);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-top:1px solid var(--border);padding:10px 14px;display:none;gap:8px;z-index:180}
+.sel-action-bar.on{display:flex}
+.sel-action-bar .btn{margin:0}
+
+/* ── 엑셀/가져오기 보조 버튼 ── */
+.proj-sub-btns{display:flex;gap:8px;margin-top:8px}
+.sub-btn{flex:1;padding:11px;border-radius:var(--r);font-size:13px;font-weight:700;border:1.5px solid var(--border);background:var(--card);color:var(--sub);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;font-family:inherit}
+.sub-btn:active{opacity:.85}
+.sub-btn.blue{border-color:#b8d4f0;background:#f0f6ff;color:var(--blue)}
+
+/* ── 일정 부분완료 표시 ── */
+.sched-chk.partial{background:#fff9c4;border-color:#f9a825;color:#f57f17;font-size:11px;font-weight:800}
+.sched-row.partial{background:#fffdf2}
+.sched-row.partial:active{background:#fdf8e3}
+
+/* ── 전화 링크 배지 ── */
+.tel-badge{display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:700;background:#EBF4FF;color:var(--blue);border:1px solid #c2d9f0;border-radius:5px;padding:1px 6px;margin-top:3px;text-decoration:none}
 </style>
 </head>
 <body>
@@ -356,24 +379,52 @@ body{font-family:-apple-system,'Noto Sans KR',sans-serif;background:var(--bg);co
 </div>
 
 
-<!-- ── 탭 슬라이더(관리/일정/완료) ── -->
-<div class="tab-slider-wrap"><div class="tab-slider" id="tab-slider">
-
 <!-- 탭0: 조사관리 -->
 <div class="tab-pane on" id="tab-pane-0">
   <div class="proj-top">
     <button class="new-btn" onclick="openProjSheet(null)">＋ 새 조사 프로젝트</button>
+    <div class="proj-sub-btns">
+      <button class="sub-btn blue" onclick="openExcelImport()">📥 엑셀로 만들기</button>
+      <button class="sub-btn" onclick="downloadTemplate()">📄 양식 받기</button>
+    </div>
   </div>
   <div class="proj-list" id="proj-list"></div>
 </div>
 
 <!-- 탭1: 조사일정 -->
 <div class="tab-pane" id="tab-pane-1">
-  <div id="view-month">
+  <div class="view-tabs" id="view-tabs-inner" style="display:none">
+    <div class="vtab" id="vtab0" onclick="switchView(0)">일</div>
+    <div class="vtab" id="vtab1" onclick="switchView(1)">주</div>
+    <div class="vtab on" id="vtab2" onclick="switchView(2)">월</div>
+  </div>
+  <div id="day-banner-outer" class="day-banner" style="position:sticky;top:150px;z-index:85;background:var(--bg)">
+    <div class="day-banner-nav" onclick="navDay(-1)">‹</div>
+    <div class="day-banner-center">
+      <div class="day-banner-lbl" id="dn-lbl">오늘</div>
+      <div class="day-banner-date" id="dn-date">-</div>
+      <div class="day-banner-dow" id="dn-dow">-</div>
+    </div>
+    <div class="day-today-btn" onclick="goToday()">오늘</div>
+    <div class="day-banner-nav" onclick="navDay(1)">›</div>
+  </div>
+  <div id="view-day">
+    <div class="day-summary" id="day-summary"></div>
+    <div id="sched-list"></div>
+    <div class="add-sched-btn" onclick="openPickSheet()">＋ 조사 일정 추가</div>
+  </div>
+  <!-- 완료 저장 버튼 (view-day 밖에 위치해야 재렌더 시 안 날아감) -->
+  <div class="sched-save-bar" id="sched-save-bar">
+    <button class="sched-save-btn" onclick="saveDayDone()">✓ 완료 저장</button>
+  </div>
+  <div id="view-week" style="display:none">
+    <div class="week-head" id="week-head"></div>
+    <div id="week-detail"></div>
+  </div>
+  <div id="view-month" style="display:none">
     <div class="month-nav">
       <div class="month-nav-btn" onclick="navMonth(-1)">‹</div>
       <div class="month-nav-label" id="month-label">-</div>
-      <div class="day-today-btn" onclick="goMonthToday()" style="margin-right:6px">오늘</div>
       <div class="month-nav-btn" onclick="navMonth(1)">›</div>
     </div>
     <div class="month-dow-row">
@@ -393,9 +444,13 @@ body{font-family:-apple-system,'Noto Sans KR',sans-serif;background:var(--bg);co
   <div id="done-list"></div>
 </div>
 
-</div></div><!-- /tab-slider /tab-slider-wrap -->
 
 
+<!-- ── 프로젝트 선택 삭제 바 ── -->
+<div class="sel-action-bar" id="proj-sel-bar">
+  <div class="btn btn-c" onclick="exitProjSelect()">취소</div>
+  <div class="btn btn-d" onclick="deleteSelectedProjs()">🗑️ 선택 삭제 (<span id="proj-sel-count">0</span>)</div>
+</div>
 
 <!-- ── 하단 메인 탭바 (2개) ── -->
 <div class="tab-bar">
@@ -504,6 +559,7 @@ body{font-family:-apple-system,'Noto Sans KR',sans-serif;background:var(--bg);co
       <div class="fld"><label>조사건수</label><input type="number" id="i-cnt" placeholder="건수" min="0" inputmode="numeric"></div>
     </div>
     <div class="fld"><label>메모</label><input type="text" id="i-memo" placeholder="전화요망, 연락처 등" autocomplete="off"></div>
+    <div class="fld"><label>전화번호 <span style="color:var(--hint);font-weight:400">(선택)</span></label><input type="tel" id="i-tel" placeholder="010-0000-0000" autocomplete="off" inputmode="tel"></div>
     <div class="popup-divider"></div>
     <div style="font-size:12px;font-weight:700;color:var(--sub);margin-bottom:8px">조사 상태</div>
     <div class="modal-status-row">
@@ -622,6 +678,74 @@ body{font-family:-apple-system,'Noto Sans KR',sans-serif;background:var(--bg);co
   </div>
 </div></div>
 
+<!-- ── 팝업: 조사 상태 변경 (일정 좌측 점 탭) ── -->
+<div class="ov" id="ov-sched-status" onclick="bgClose('ov-sched-status')">
+<div class="sheet" style="max-width:360px" onclick="event.stopPropagation()">
+  <div class="popup-hdr">
+    <div class="popup-hdr-icon green">📋</div>
+    <div class="popup-hdr-title">조사 상태 변경</div>
+    <button class="popup-hdr-close" onclick="closeOv('ov-sched-status')">✕</button>
+  </div>
+  <div id="sched-status-info" style="font-size:13px;color:var(--sub);margin-bottom:14px"></div>
+  <div class="modal-status-row">
+    <div class="mstb" id="ss0" onclick="setSchedStatus('pending')">진행중</div>
+    <div class="mstb" id="ss1" onclick="setSchedStatus('partial')">△ 부분완료</div>
+    <div class="mstb" id="ss2" onclick="setSchedStatus('done')">○ 완료</div>
+  </div>
+  <div class="fld" id="sched-partial-wrap" style="display:none">
+    <label>완료 건수 <span id="sched-partial-max" style="color:var(--sub);font-weight:400"></span></label>
+    <input type="number" id="sched-partial-cnt" placeholder="완료 건수 입력" min="1" inputmode="numeric" style="color-scheme:light">
+  </div>
+  <div class="popup-divider"></div>
+  <div class="btn-row">
+    <div class="btn btn-c" onclick="closeOv('ov-sched-status')">취소</div>
+    <div class="btn btn-p" onclick="applySchedStatus()">적용</div>
+  </div>
+</div></div>
+
+<!-- ── 팝업: 엑셀로 프로젝트 만들기 ── -->
+<div class="ov" id="ov-excel" onclick="bgClose('ov-excel')">
+<div class="sheet" onclick="event.stopPropagation()">
+  <div class="popup-hdr">
+    <div class="popup-hdr-icon green">📥</div>
+    <div class="popup-hdr-title">엑셀로 프로젝트 만들기</div>
+    <button class="popup-hdr-close" onclick="closeOv('ov-excel')">✕</button>
+  </div>
+  <div style="font-size:12px;color:var(--sub);line-height:1.6;margin-bottom:12px">
+    노트북에서 <strong>농협 · 계약자명 · 건수</strong>만 입력하면 됩니다.<br>
+    품목 · 지점 · 조사자 · 수확예정일 · 전화번호는 선택 입력이에요.
+  </div>
+  <button class="sub-btn blue" style="width:100%;margin-bottom:14px" onclick="downloadTemplate()">📄 엑셀 양식(서식) 내려받기</button>
+  <div class="popup-divider"></div>
+  <div class="fld">
+    <label>품목 <span style="color:var(--hint);font-weight:400">(파일에 품목 열이 없을 때 사용)</span></label>
+    <div class="chip-row">
+      <div class="chip" onclick="xlPickCrop(this,'마늘')">🧄 마늘</div>
+      <div class="chip" onclick="xlPickCrop(this,'양파')">🧅 양파</div>
+      <div class="chip" onclick="xlPickCrop(this,'착과수조사')">🍇 착과수조사</div>
+      <div class="chip" onclick="xlPickCrop(this,'적과후착과수조사')">🍎 적과후착과수</div>
+      <div class="chip" onclick="xlPickCrop(this,'벼')">🌾 벼</div>
+      <div class="chip" onclick="xlPickCrop(this,'콩')">🫘 콩</div>
+    </div>
+    <input type="text" id="xl-crop" placeholder="직접 입력 (선택)" autocomplete="off" oninput="if(_excelRows)_buildExcelPreview()">
+  </div>
+  <div class="fld">
+    <label>조사자 <span style="color:var(--hint);font-weight:400">(파일에 조사자 열이 없을 때 사용)</span></label>
+    <input type="text" id="xl-insp" placeholder="이름 (선택)" autocomplete="off" oninput="if(_excelRows)_buildExcelPreview()">
+  </div>
+  <div class="popup-divider"></div>
+  <label style="display:block;width:100%;padding:13px;background:#f0faf4;color:var(--green);border:1.5px dashed #a5d6c0;border-radius:12px;font-size:14px;font-weight:700;text-align:center;cursor:pointer">
+    📂 엑셀 파일 선택 (.xlsx / .csv)
+    <input type="file" id="xl-file" accept=".xlsx,.xls,.csv" style="display:none" onchange="xlOnFile(this)">
+  </label>
+  <div id="xl-crop-hint" style="display:none;font-size:11px;color:var(--orange);margin-top:8px;line-height:1.5">⚠️ 품목 열이 없는 항목은 '기타'로 분류됩니다. 위에서 품목을 골라주세요.</div>
+  <div id="xl-preview" style="display:none;margin-top:14px;background:#f8faf5;border:1px solid #a5d6c0;border-radius:10px;padding:12px">
+    <div style="font-size:12px;font-weight:700;color:var(--green);margin-bottom:8px">📋 만들어질 프로젝트</div>
+    <div id="xl-preview-list" style="max-height:32vh;overflow-y:auto"></div>
+    <button class="big-btn" id="xl-confirm-btn" style="background:var(--green);color:#fff;border-radius:12px;margin-top:10px" onclick="confirmExcelImport()">✓ 프로젝트 만들기</button>
+  </div>
+</div></div>
+
 <!-- ── 토스트 ── -->
 <div class="toast" id="toast"></div>
 
@@ -648,10 +772,14 @@ body{font-family:-apple-system,'Noto Sans KR',sans-serif;background:var(--bg);co
 const KEY='survey_v1', SKEY='schedule_v2';
 let db={projects:[]}, schedules=[];
 let curId=null, editItemIdx=null, editProjId=null, curSt2='pending', shareMode='all', capZoom=1.0;
-let curView=0, curDayOffset=0, curWeekOffset=0;
+let curView=2, curDayOffset=0, curWeekOffset=0;
 let curMonthYear=new Date().getFullYear(), curMonthMonth=new Date().getMonth();
 let curMonthSelDate=null, curWeekSelDay=null;
 let doneFilterCrop='전체';
+let doneStatusFilter='done', doneSortDesc=true; // 완료탭 상태/정렬
+let projSelectMode=false, selectedProjs=new Set(); // 프로젝트 선택 삭제 모드
+let _schedStatusTarget={dateStr:'',schedIdx:0}, _schedStatusSel='pending'; // 일정 상태 변경
+let _excelRows=null, _excelGroups=null; // 엑셀 가져오기
 
 function load(){
   try{db=JSON.parse(localStorage.getItem(KEY))||{projects:[]};}catch(e){db={projects:[]};}
@@ -690,26 +818,7 @@ function isInSched(projId,itemIdx){return schedules.some(s=>s.projId===projId&&s
 function getSchedForDate(dateStr){return schedules.filter(s=>s.dateStr===dateStr);}
 
 // ══ 서브탭 전환 (관리/일정/완료) ══
-let _curTab=0, _slideTimer=null;
-
-// 헤더/서브탭/하단바 높이를 재서 슬라이더 칸 위치를 잡아줌 (기기/안전영역 차이 대응)
-function relayout(){
-  const hdr=document.getElementById('main-header');
-  const sb=document.querySelector('.sub-tab-bar');
-  const tb=document.querySelector('.tab-bar');
-  const vt=document.getElementById('view-tabs-inner');
-  const r=document.documentElement.style;
-  const hh=hdr?hdr.offsetHeight:58;
-  const stb=sb?sb.offsetHeight:40;
-  const tbh=tb?tb.offsetHeight:56;
-  r.setProperty('--hh',hh+'px');
-  r.setProperty('--topc',(hh+stb)+'px');
-  r.setProperty('--botc',tbh+'px');
-  if(vt&&vt.offsetHeight) r.setProperty('--vth',vt.offsetHeight+'px');
-}
-let _rlTimer=null;
-window.addEventListener('resize',()=>{clearTimeout(_rlTimer);_rlTimer=setTimeout(relayout,120);});
-window.addEventListener('orientationchange',()=>setTimeout(relayout,250));
+let _curTab=0;
 const HEADER_SUBS=['프로젝트별 계약자 관리','날짜별 조사 일정','일자별 조사 완료 목록'];
 
 function goCalc(){
@@ -719,23 +828,27 @@ function goCalc(){
 }
 
 function switchMain(i){
+  const prev=_curTab;
   _curTab=i;
+  // 프로젝트 선택모드 해제
+  projSelectMode=false; selectedProjs=new Set();
+  const _sb=document.getElementById('proj-sel-bar'); if(_sb)_sb.classList.remove('on');
   document.querySelectorAll('.stab').forEach((t,j)=>t.classList.toggle('on',i===j));
   [0,1,2].forEach(j=>{
     const p=document.getElementById(`tab-pane-${j}`);
-    if(p) p.classList.toggle('on',i===j);
+    if(!p)return;
+    p.classList.remove('on','slide-in-right','slide-in-left');
+    if(i===j){
+      p.classList.add('on');
+      p.classList.add(i>prev?'slide-in-right':'slide-in-left');
+    }
   });
-  const slider=document.getElementById('tab-slider');
-  if(slider){
-    slider.style.transition='transform .3s cubic-bezier(.4,0,.2,1)';
-    slider.style.transform=`translateX(${-i*100}%)`;
-  }
   const saveBar=document.getElementById('sched-save-bar');
   if(saveBar&&i!==1) saveBar.classList.remove('on');
   document.getElementById('scr-det').classList.remove('on');
   document.getElementById('header-sub').textContent=HEADER_SUBS[i];
   if(i===0){localStorage.setItem('last_screen','list');renderList();}
-  else if(i===1){localStorage.setItem('last_screen','sched');renderCurrentView();}
+  else if(i===1){localStorage.setItem('last_screen','sched');curMonthYear=new Date().getFullYear();curMonthMonth=new Date().getMonth();curMonthSelDate=todayStr();switchView(2);}
   else{localStorage.setItem('last_screen','done');renderDoneList();}
 }
 function goProjects(){
@@ -746,17 +859,18 @@ function goProjects(){
 }
 
 // ══ 뷰 전환 (일/주/월) ══
-// 일정 탭은 월 달력 한 가지만 사용 (일/주 뷰 제거)
-function switchView(i){ renderMonthView(); }
-function _updateBanner(){} // 더미 (하위 호환용)
-function renderCurrentView(){ renderMonthView(); }
-function goMonthToday(){
-  const t=new Date();
-  curMonthYear=t.getFullYear();
-  curMonthMonth=t.getMonth();
-  curMonthSelDate=todayStr();
-  renderMonthView();
+function switchView(i){
+  curView=i;
+  ['vtab0','vtab1','vtab2'].forEach((id,j)=>document.getElementById(id).classList.toggle('on',i===j));
+  document.getElementById('view-day').style.display=i===0?'':'none';
+  document.getElementById('view-week').style.display=i===1?'':'none';
+  document.getElementById('view-month').style.display=i===2?'':'none';
+  const banner=document.getElementById('day-banner-outer');
+  if(banner) banner.style.display=i===0?'flex':'none';
+  renderCurrentView();
 }
+function _updateBanner(){} // 더미 (하위 호환용)
+function renderCurrentView(){if(curView===0)renderDayView();else if(curView===1)renderWeekView();else renderMonthView();}
 
 // ══ 토스트 ══
 let _toastTimer=null;
@@ -831,7 +945,6 @@ function navDay(d){curDayOffset+=d;_pendingChecks={};renderDayView();}
 function goToday(){curDayOffset=0;_pendingChecks={};renderDayView();}
 
 function renderDayView(){
-  if(!document.getElementById('sched-list')) return; // 일 뷰 제거됨 → 안전 종료
   load();
   const today=new Date();today.setHours(0,0,0,0);
   const cur=new Date(today);cur.setDate(cur.getDate()+curDayOffset);
@@ -867,10 +980,14 @@ function renderDayView(){
   let tot=0,don=0;
   daySched.forEach(s=>{
     const p=db.projects.find(x=>x.id===s.projId);if(!p||!p.items[s.itemIdx])return;
-    const sc=s.cnt||p.items[s.itemIdx].c||0;tot+=sc;
+    const item=p.items[s.itemIdx];
+    const sc=s.cnt||item.c||0;tot+=sc;
     const key=`${s.projId}:${s.itemIdx}:${ds}`;
-    const checked=_pendingChecks.hasOwnProperty(key)?_pendingChecks[key]:s.checked;
-    if(checked)don+=sc;
+    let portion=0;
+    if(_pendingChecks.hasOwnProperty(key)) portion=_pendingChecks[key]?sc:0;
+    else if(item.s==='done') portion=sc;
+    else if(item.s==='partial') portion=Math.min(item.doneCnt||0,sc);
+    don+=portion;
   });
   sumEl.innerHTML=`<div class="dscard"><div class="dscard-val b">${daySched.length}</div><div class="dscard-lbl">계약자</div></div><div class="dscard"><div class="dscard-val b">${tot}</div><div class="dscard-lbl">조사건</div></div><div class="dscard"><div class="dscard-val g">${don}</div><div class="dscard-lbl">완료</div></div><div class="dscard"><div class="dscard-val r">${tot-don}</div><div class="dscard-lbl">잔여</div></div>`;
 
@@ -885,15 +1002,21 @@ function renderDayView(){
     const actualChecked = s.checked && (x.s==='done'||x.s==='partial');
     if(s.checked !== actualChecked){ s.checked=actualChecked; needSave=true; }
     const checked=_pendingChecks.hasOwnProperty(key)?_pendingChecks[key]:s.checked;
-    const rowBg=checked?'done':'';
-    html+=`<div class="sched-row ${rowBg}" id="srow-${si}"
+    // 점/배경 표시: 임시체크 우선, 없으면 실제 조사상태(완료/부분완료/진행중) 반영
+    let dotCls='',dotTxt='',rowCls='';
+    if(_pendingChecks.hasOwnProperty(key)){
+      if(_pendingChecks[key]){dotCls='done';dotTxt='✓';rowCls='done';}
+    } else if(x.s==='done'){dotCls='done';dotTxt='✓';rowCls='done';}
+    else if(x.s==='partial'){dotCls='partial';dotTxt=`${x.doneCnt||0}`;rowCls='partial';}
+    html+=`<div class="sched-row ${rowCls}" id="srow-${si}"
       onclick="pendingCheck('${ds}',${si},'${key}')"
       oncontextmenu="event.preventDefault();openSchedDateSheet('${ds}',${si})">
-      <div class="sched-chk ${checked?'done':''}">${checked?'✓':''}</div>
+      <div class="sched-chk ${dotCls}" onclick="event.stopPropagation();openSchedStatus('${ds}',${si})">${dotTxt}</div>
       <div class="sched-info">
         <div class="sched-name">${x.n}</div>
         <div class="sched-meta">${ce(p.crop)} ${p.crop} · ${pname}</div>
         ${x.m?`<div class="memo-badge">📌 ${x.m}</div>`:''}
+        ${x.tel?`<a class="tel-badge" href="tel:${x.tel}" onclick="event.stopPropagation()">☎ ${x.tel}</a>`:''}
       </div>
       <div class="sched-cnt">${s.cnt||x.c}건<br><span style="font-size:10px;color:var(--hint)">전체 ${x.c}건</span></div>
       <button class="sched-del" onclick="event.stopPropagation();removeFromSched('${ds}',${si})">✕</button>
@@ -977,6 +1100,58 @@ function saveDayDone(){
   }
 }
 
+// ── 일정 좌측 점 탭 → 조사 상태 변경 (진행중/부분완료/완료) ──
+function openSchedStatus(dateStr,schedIdx){
+  load();
+  const daySched=getSchedForDate(dateStr);
+  const s=daySched[schedIdx];if(!s)return;
+  const p=db.projects.find(x=>x.id===s.projId);if(!p||!p.items[s.itemIdx])return;
+  const x=p.items[s.itemIdx];
+  const pname=p.branch?`${p.coop} ${p.branch}`:p.coop;
+  _schedStatusTarget={dateStr,schedIdx};
+  document.getElementById('sched-status-info').innerHTML=
+    `<strong>${x.n}</strong> · ${ce(p.crop)} ${p.crop} · ${pname}<br><span style="color:var(--hint)">전체 ${x.c}건</span>`;
+  document.getElementById('sched-partial-cnt').value=(x.s==='partial'?(x.doneCnt||''):'');
+  document.getElementById('sched-partial-cnt').max=Math.max(1,(x.c||0)-1);
+  document.getElementById('sched-partial-max').textContent=`(전체 ${x.c||0}건 중)`;
+  setSchedStatus(x.s||'pending');
+  openOv('ov-sched-status');
+}
+function setSchedStatus(s){
+  _schedStatusSel=s;
+  document.getElementById('ss0').className='mstb'+(s==='pending'?' sp':'');
+  document.getElementById('ss1').className='mstb'+(s==='partial'?' sy':'');
+  document.getElementById('ss2').className='mstb'+(s==='done'?' sd':'');
+  document.getElementById('sched-partial-wrap').style.display=s==='partial'?'':'none';
+}
+function applySchedStatus(){
+  const{dateStr,schedIdx}=_schedStatusTarget;
+  load();
+  const daySched=getSchedForDate(dateStr);
+  const s=daySched[schedIdx];if(!s){closeOv('ov-sched-status');return;}
+  const p=db.projects.find(x=>x.id===s.projId);if(!p||!p.items[s.itemIdx]){closeOv('ov-sched-status');return;}
+  const item=p.items[s.itemIdx];const totalCnt=item.c||0;
+  if(_schedStatusSel==='done'){
+    item.doneCnt=totalCnt;item.s='done';
+    if(!item.doneDate)item.doneDate=dateStr;
+    s.checked=true;
+  } else if(_schedStatusSel==='partial'){
+    const dc=parseInt(document.getElementById('sched-partial-cnt').value)||0;
+    if(dc<=0){showToast('⚠️ 완료 건수를 입력하세요');return;}
+    if(dc>=totalCnt){showToast('⚠️ 전체 완료면 ○완료를 선택하세요');return;}
+    item.doneCnt=dc;item.s='partial';item.doneDate='';s.checked=false;
+  } else {
+    item.doneCnt=0;item.s='pending';item.doneDate='';s.checked=false;
+  }
+  delete _pendingChecks[`${s.projId}:${s.itemIdx}:${dateStr}`];
+  save();
+  closeOv('ov-sched-status');
+  renderCurrentView();
+  if(curId===s.projId)renderDet();
+  const lbl=_schedStatusSel==='done'?'완료':_schedStatusSel==='partial'?'부분완료':'진행중';
+  showToast(`📋 ${item.n} → ${lbl}`);
+}
+
 function toggleDone(dateStr,schedIdx){
   load();
   const daySched=getSchedForDate(dateStr);const s=daySched[schedIdx];if(!s)return;
@@ -994,17 +1169,16 @@ function toggleDone(dateStr,schedIdx){
     if(item.doneCnt>=totalCnt&&!item.doneDate) item.doneDate=dateStr;
   }
   item.s=item.doneCnt>=totalCnt?'done':item.doneCnt>0?'partial':'pending';
-  save();renderCurrentView();if(curId===s.projId)renderDet();
+  save();renderDayView();if(curId===s.projId)renderDet();
 }
 function removeFromSched(dateStr,schedIdx){
   load();const daySched=getSchedForDate(dateStr);const s=daySched[schedIdx];if(!s)return;
-  schedules.splice(schedules.indexOf(s),1);save();renderCurrentView();
+  schedules.splice(schedules.indexOf(s),1);save();renderDayView();
 }
 
 // ══ 주 뷰 ══
 function navWeek(d){curWeekOffset+=d;renderWeekView();}
 function renderWeekView(){
-  if(!document.getElementById("week-head")) return; // 주 뷰 제거됨
   load();
   const today=new Date();today.setHours(0,0,0,0);
   const weekStart=new Date(today);weekStart.setDate(today.getDate()-today.getDay()+curWeekOffset*7);
@@ -1031,7 +1205,8 @@ function renderWeekDetail(){
   else daySched.forEach((s,si)=>{
     const p=db.projects.find(x=>x.id===s.projId);if(!p||!p.items[s.itemIdx])return;
     const x=p.items[s.itemIdx];const pname=p.branch?`${p.coop} ${p.branch}`:p.coop;
-    html+=`<div class="sched-row ${s.checked?'done':''}"><div class="sched-chk ${s.checked?'done':''}" onclick="toggleDone('${ds}',${si})">${s.checked?'✓':''}</div><div class="sched-info"><div class="sched-name">${x.n}</div><div class="sched-meta">${ce(p.crop)} ${p.crop} · ${pname}</div>${x.m?`<div class="memo-badge">📌 ${x.m}</div>`:''}</div><div class="sched-cnt">${s.cnt||x.c}건</div><button class="sched-del" onclick="removeFromSched('${ds}',${si})">✕</button></div>`;
+    const dc=x.s==='done'?'done':x.s==='partial'?'partial':'';const dt=x.s==='done'?'✓':x.s==='partial'?`${x.doneCnt||0}`:'';
+    html+=`<div class="sched-row ${dc}"><div class="sched-chk ${dc}" onclick="event.stopPropagation();openSchedStatus('${ds}',${si})">${dt}</div><div class="sched-info"><div class="sched-name">${x.n}</div><div class="sched-meta">${ce(p.crop)} ${p.crop} · ${pname}</div>${x.m?`<div class="memo-badge">📌 ${x.m}</div>`:''}</div><div class="sched-cnt">${s.cnt||x.c}건</div><button class="sched-del" onclick="removeFromSched('${ds}',${si})">✕</button></div>`;
   });
   html+=`<div class="add-sched-btn" style="margin:10px 14px" onclick="openPickSheetForDate('${ds}')">＋ ${title} 일정 추가</div>`;
   document.getElementById('week-detail').innerHTML=html;
@@ -1041,7 +1216,6 @@ function renderWeekDetail(){
 function navMonth(d){curMonthMonth+=d;if(curMonthMonth>11){curMonthMonth=0;curMonthYear++;}if(curMonthMonth<0){curMonthMonth=11;curMonthYear--;}renderMonthView();}
 function renderMonthView(){
   load();document.getElementById('month-label').textContent=`${curMonthYear}년 ${curMonthMonth+1}월`;
-  if(!curMonthSelDate) curMonthSelDate=todayStr();  // 처음 들어오면 오늘 자동 선택
   const firstDay=new Date(curMonthYear,curMonthMonth,1);const lastDay=new Date(curMonthYear,curMonthMonth+1,0);
   const startDow=firstDay.getDay();const today=todayStr();let html='';
   for(let i=0;i<startDow;i++){const d=new Date(curMonthYear,curMonthMonth,1-startDow+i);const ds=dateToStr(d);const cnt=getSchedForDate(ds).length;html+=`<div class="mday other-month" onclick="selectMonthDay('${ds}')"><div class="md-num">${d.getDate()}</div><div class="md-dot${cnt?' on':''}"></div>${cnt?`<div class="md-cnt">${cnt}</div>`:''}</div>`;}
@@ -1051,19 +1225,16 @@ function renderMonthView(){
 }
 function selectMonthDay(ds){curMonthSelDate=ds;renderMonthView();}
 function renderMonthDetail(ds){
-  const d=strToDate(ds);const lbl=getDateLabel(ds);
-  const title=`${d.getFullYear()}.${d.getMonth()+1}.${d.getDate()} (${DAY_KO[d.getDay()]})${lbl?' · '+lbl:''}`;
-  const daySched=getSchedForDate(ds);
-  let totCnt=0;
-  daySched.forEach(s=>{const p=db.projects.find(x=>x.id===s.projId);if(p&&p.items[s.itemIdx])totCnt+=(s.cnt||p.items[s.itemIdx].c||0);});
-  let html=`<div class="month-detail-hdr">📅 ${title} · ${daySched.length}명 / ${totCnt}건</div>`;
-  if(!daySched.length){html+=`<div style="text-align:center;padding:24px 20px;color:var(--hint);font-size:13px;line-height:1.8">이 날 일정이 없습니다<br>아래 버튼으로 계약자를 추가하세요</div>`;}
+  const d=strToDate(ds);const lbl=getDateLabel(ds);const title=`${d.getMonth()+1}/${d.getDate()}(${DAY_KO[d.getDay()]})${lbl?' · '+lbl:''}`;
+  const daySched=getSchedForDate(ds);let html=`<div class="month-detail-hdr">${title} · ${daySched.length}건 일정</div>`;
+  if(!daySched.length){html+=`<div style="text-align:center;padding:20px;color:var(--hint);font-size:13px">일정이 없습니다</div>`;}
   else daySched.forEach((s,si)=>{
     const p=db.projects.find(x=>x.id===s.projId);if(!p||!p.items[s.itemIdx])return;
     const x=p.items[s.itemIdx];const pname=p.branch?`${p.coop} ${p.branch}`:p.coop;
-    html+=`<div class="sched-row ${s.checked?'done':''}"><div class="sched-chk ${s.checked?'done':''}" onclick="toggleDone('${ds}',${si});renderMonthView()">${s.checked?'✓':''}</div><div class="sched-info"><div class="sched-name">${x.n}</div><div class="sched-meta">${ce(p.crop)} ${p.crop} · ${pname}</div>${x.m?`<div class="memo-badge">📌 ${x.m}</div>`:''}</div><div class="sched-cnt">${s.cnt||x.c}건</div><button class="sched-del" onclick="removeFromSched('${ds}',${si});renderMonthView()">✕</button></div>`;
+    const dc=x.s==='done'?'done':x.s==='partial'?'partial':'';const dt=x.s==='done'?'✓':x.s==='partial'?`${x.doneCnt||0}`:'';
+    html+=`<div class="sched-row ${dc}"><div class="sched-chk ${dc}" onclick="event.stopPropagation();openSchedStatus('${ds}',${si})">${dt}</div><div class="sched-info"><div class="sched-name">${x.n}</div><div class="sched-meta">${ce(p.crop)} ${p.crop} · ${pname}</div></div><div class="sched-cnt">${s.cnt||x.c}건</div><button class="sched-del" onclick="removeFromSched('${ds}',${si});renderMonthView()">✕</button></div>`;
   });
-  html+=`<div class="add-sched-btn" style="margin:12px 14px" onclick="openPickSheetForDate('${ds}')">＋ ${d.getMonth()+1}/${d.getDate()} 일정 추가</div>`;
+  html+=`<div class="add-sched-btn" style="margin:10px 14px" onclick="openPickSheetForDate('${ds}')">＋ 일정 추가</div>`;
   document.getElementById('month-detail').innerHTML=html;
 }
 
@@ -1236,8 +1407,10 @@ function renderList(){
     const hasSched=schedItems.length>0;
     let schedBadge='';
     if(hasSched){const uniqueDates=[...new Set(schedItems.map(s=>s.dateStr))].sort();const nearest=uniqueDates[0];const lbl=getDateLabel(nearest)||fmtDateFull(nearest);schedBadge=`<div class="p-sched-badge">📅 ${lbl} 외 ${uniqueDates.length}일</div>`;}
-    return `<div class="proj-card${hasSched?' has-sched':''}" onclick="openProj('${p.id}')">
-      <div class="pct"><div class="p-emoji">${ce(p.crop)}</div><div class="p-info"><div class="p-name">${p.crop} — ${nm}</div><div class="p-meta">${p.insp?p.insp+' · ':''}${p.items.length}명 · ${new Date(p.created).toLocaleDateString('ko')}</div>${schedBadge}</div></div>
+    const isSel=selectedProjs.has(p.id);
+    const selBox=projSelectMode?`<div class="proj-sel-chk ${isSel?'on':''}">${isSel?'✓':''}</div>`:'';
+    return `<div class="proj-card${hasSched?' has-sched':''}${projSelectMode?' selmode':''}${isSel?' sel':''}" data-pid="${p.id}" onclick="onProjCardClick('${p.id}')">
+      <div class="pct">${selBox}<div class="p-emoji">${ce(p.crop)}</div><div class="p-info"><div class="p-name">${p.crop} — ${nm}</div><div class="p-meta">${p.insp?p.insp+' · ':''}${p.items.length}명 · ${new Date(p.created).toLocaleDateString('ko')}</div>${schedBadge}</div></div>
       <div class="prog-wrap"><div class="prog-bg"><div class="prog-fill" style="width:${pct}%"></div></div></div>
       <div class="p-stats">
         <div class="pst"><div class="pst-v b">${tot}</div><div class="pst-l">조사건</div></div>
@@ -1248,10 +1421,63 @@ function renderList(){
       </div>
     </div>`;
   }).join('');
+  _attachProjLongPress();
+  _updateSelBar();
+}
+
+// ── 프로젝트 길게눌러 선택 → 삭제 ──
+function onProjCardClick(id){
+  if(projSelectMode) toggleProjSelect(id);
+  else openProj(id);
+}
+function _attachProjLongPress(){
+  document.querySelectorAll('#proj-list .proj-card').forEach(card=>{
+    const id=card.getAttribute('data-pid');
+    let lt=null,moved=false;
+    card.addEventListener('touchstart',()=>{
+      if(projSelectMode)return;
+      moved=false;
+      lt=setTimeout(()=>{if(!moved){enterProjSelect(id);if(navigator.vibrate)navigator.vibrate(30);}},500);
+    },{passive:true});
+    card.addEventListener('touchmove',()=>{moved=true;clearTimeout(lt);},{passive:true});
+    card.addEventListener('touchend',()=>clearTimeout(lt),{passive:true});
+    card.addEventListener('touchcancel',()=>clearTimeout(lt),{passive:true});
+  });
+}
+function enterProjSelect(id){projSelectMode=true;selectedProjs=new Set();if(id)selectedProjs.add(id);renderList();}
+function exitProjSelect(){projSelectMode=false;selectedProjs=new Set();renderList();}
+function toggleProjSelect(id){if(selectedProjs.has(id))selectedProjs.delete(id);else selectedProjs.add(id);renderList();}
+function _updateSelBar(){
+  const bar=document.getElementById('proj-sel-bar');if(!bar)return;
+  if(projSelectMode&&_curTab===0){bar.classList.add('on');document.getElementById('proj-sel-count').textContent=selectedProjs.size;}
+  else bar.classList.remove('on');
+}
+function deleteSelectedProjs(){
+  if(!selectedProjs.size){showToast('⚠️ 삭제할 프로젝트를 선택하세요');return;}
+  load();
+  const ids=[...selectedProjs];
+  const names=ids.map(id=>{const p=db.projects.find(x=>x.id===id);if(!p)return'';const nm=p.branch?`${p.coop} ${p.branch}`:p.coop;return `${p.crop} — ${nm}`;}).filter(Boolean);
+  showConfirm({
+    icon:'🗑️',
+    msg:`${ids.length}개 프로젝트를 삭제할까요?`,
+    sub:names.slice(0,4).join('  /  ')+(names.length>4?`  외 ${names.length-4}개`:''),
+    okText:'삭제',okColor:'var(--red)',
+    onOk:()=>{
+      load();
+      schedules=schedules.filter(s=>!ids.includes(s.projId));
+      db.projects=db.projects.filter(p=>!ids.includes(p.id));
+      save();
+      projSelectMode=false;selectedProjs=new Set();
+      renderList();
+      showToast(`🗑️ ${ids.length}개 프로젝트가 삭제됐습니다`);
+    }
+  });
 }
 
 // ══ 프로젝트 상세 ══
 function openProj(id){
+  projSelectMode=false;selectedProjs=new Set();
+  const _sb=document.getElementById('proj-sel-bar');if(_sb)_sb.classList.remove('on');
   load();curId=id;localStorage.setItem('last_screen','proj');localStorage.setItem('last_proj_id',id);
   const p=db.projects.find(x=>x.id===id);if(!p)return;
   const nm=p.branch?`${p.coop} ${p.branch}`:p.coop;
@@ -1282,7 +1508,7 @@ function renderDet(){
       const sc=x.s==='done'?'done':x.s==='fail'?'fail':x.s==='partial'?'partial':'';
       const si=x.s==='done'?'✓':x.s==='fail'?'✕':x.s==='partial'?`${x.doneCnt||0}/${x.c}`:'';
       const inSched=isInSched(curId,x._i);
-      html+=`<div class="row ${sc}${inSched?' in-sched':''}" onclick="openItemSheet(${x._i})"><div class="sdot ${sc}">${si}</div><div class="r-main"><div class="r-name">${x.n}</div>${inSched?`<div class="r-sched-tag">📅 일정등록됨</div>`:''} ${x.m?`<div class="memo-badge">📌 ${x.m}</div>`:''}</div><div class="r-cnt">${x.c}건</div><div class="r-date">${fmtDate(x.d)}</div></div>`;
+      html+=`<div class="row ${sc}${inSched?' in-sched':''}" onclick="openItemSheet(${x._i})"><div class="sdot ${sc}">${si}</div><div class="r-main"><div class="r-name">${x.n}</div>${inSched?`<div class="r-sched-tag">📅 일정등록됨</div>`:''} ${x.m?`<div class="memo-badge">📌 ${x.m}</div>`:''}${x.tel?`<a class="tel-badge" href="tel:${x.tel}" onclick="event.stopPropagation()">☎ ${x.tel}</a>`:''}</div><div class="r-cnt">${x.c}건</div><div class="r-date">${fmtDate(x.d)}</div></div>`;
     });
   });
   document.getElementById('det-list').innerHTML=html;
@@ -1293,7 +1519,7 @@ function openItemSheet(idx){
   editItemIdx=idx;load();const p=db.projects.find(x=>x.id===curId);if(!p)return;
   if(idx===null){
     document.getElementById('is-title').textContent='계약자 추가';
-    ['i-name','i-memo'].forEach(id=>document.getElementById(id).value='');
+    ['i-name','i-memo','i-tel'].forEach(id=>document.getElementById(id).value='');
     ['i-date','i-done-date'].forEach(id=>document.getElementById(id).value='');
     document.getElementById('i-cnt').value='';document.getElementById('i-done-cnt').value='';
     document.getElementById('i-del').style.display='none';
@@ -1305,6 +1531,7 @@ function openItemSheet(idx){
     document.getElementById('is-title').textContent='정보 수정';
     document.getElementById('i-name').value=x.n;document.getElementById('i-date').value=x.d&&x.d.includes('-')?x.d:'';
     document.getElementById('i-cnt').value=x.c;document.getElementById('i-memo').value=x.m;
+    document.getElementById('i-tel').value=x.tel||'';
     document.getElementById('i-del').style.display='flex';document.getElementById('i-done-date').value=x.doneDate||'';
     document.getElementById('transfer-row').style.display='flex';
     pickSt(x.s);if(x.s==='partial')document.getElementById('i-done-cnt').value=x.doneCnt||'';
@@ -1396,7 +1623,7 @@ function saveItem(){
   else if(curSt2==='done')doneCnt=totalCnt;
   // 완료 아닌 경우 doneDate 자동 초기화
   const doneDate=curSt2==='done'?(document.getElementById('i-done-date').value||''):'';
-  const item={n:name,d:document.getElementById('i-date').value||'',c:totalCnt,s:finalStatus,doneCnt,doneDate,m:(document.getElementById('i-memo').value||'').trim()};
+  const item={n:name,d:document.getElementById('i-date').value||'',c:totalCnt,s:finalStatus,doneCnt,doneDate,m:(document.getElementById('i-memo').value||'').trim(),tel:(document.getElementById('i-tel').value||'').trim()};
   load();const p=db.projects.find(x=>x.id===curId);if(!p)return;
   if(editItemIdx===null)p.items.push(item);else p.items[editItemIdx]=item;
   save();closeOv('ov-item');renderDet();
@@ -1474,35 +1701,76 @@ function delProj(){
 // ══ 완료내역 ══
 function renderDoneList(){
   load();
-  const allDone=[];
+  const all=[];
   db.projects.forEach(p=>{
     const nm=p.branch?`${p.coop} ${p.branch}`:p.coop;
     p.items.forEach((x,i)=>{
-      // s=done이고 doneDate가 있는 항목만 표시
-      if(x.s==='done'&&x.doneDate){
-        allDone.push({name:x.n,crop:p.crop,pname:nm,insp:p.insp||'',cnt:x.c||0,doneDate:x.doneDate,m:x.m||'',projId:p.id,itemIdx:i});
-      }
+      all.push({name:x.n,crop:p.crop,pname:nm,insp:p.insp||'',cnt:x.c||0,
+        doneCnt:(x.s==='done'?(x.c||0):(typeof x.doneCnt==='number'?x.doneCnt:0)),
+        doneDate:x.doneDate||'',hdate:x.d||'',m:x.m||'',tel:x.tel||'',
+        status:x.s||'pending',projId:p.id,itemIdx:i});
     });
   });
-  const crops=['전체',...new Set(allDone.map(x=>x.crop))];
-  document.getElementById('done-filter-bar').innerHTML=crops.map(c=>`<div class="dfchip${doneFilterCrop===c?' on':''}" onclick="setDoneFilter('${c}')">${c==='전체'?'전체':ce(c)+' '+c}</div>`).join('');
-  const filtered=doneFilterCrop==='전체'?allDone:allDone.filter(x=>x.crop===doneFilterCrop);
+  // 상태 필터
+  let list;
+  if(doneStatusFilter==='done') list=all.filter(x=>x.status==='done'&&x.doneDate);
+  else if(doneStatusFilter==='pending') list=all.filter(x=>x.status!=='done');
+  else list=all.slice();
+  // 품목 칩 목록
+  const crops=['전체',...new Set(all.map(x=>x.crop))];
+  if(doneFilterCrop!=='전체'&&!crops.includes(doneFilterCrop)) doneFilterCrop='전체';
+  const cropFiltered=doneFilterCrop==='전체'?list:list.filter(x=>x.crop===doneFilterCrop);
+
+  // 툴바: 상태 / 정렬 / 품목
+  const statusChips=[['done','✓ 완료'],['pending','미결'],['all','전체']]
+    .map(([v,l])=>`<div class="dfchip${doneStatusFilter===v?' on':''}" onclick="setDoneStatusFilter('${v}')">${l}</div>`).join('');
+  const sortChip=`<div class="dfchip" onclick="toggleDoneSort()">${doneSortDesc?'↓ 최신순':'↑ 오래된순'}</div>`;
+  const cropChips=crops.map(c=>`<div class="dfchip${doneFilterCrop===c?' on':''}" onclick="setDoneFilter('${c}')">${c==='전체'?'전체품목':ce(c)+' '+c}</div>`).join('');
+  document.getElementById('done-filter-bar').innerHTML=
+    statusChips+sortChip+`<div style="width:1px;background:var(--border);margin:5px 3px;flex-shrink:0"></div>`+cropChips;
+
   const listEl=document.getElementById('done-list');
-  if(!filtered.length){listEl.innerHTML=`<div class="done-empty"><div class="ei">✅</div><p>완료된 조사가 없습니다</p></div>`;return;}
-  const grps={};filtered.forEach(x=>{if(!grps[x.doneDate])grps[x.doneDate]=[];grps[x.doneDate].push(x);});
-  const sortedDates=Object.keys(grps).sort((a,b)=>b.localeCompare(a));
+  if(!cropFiltered.length){
+    const msg=doneStatusFilter==='pending'?'미결 조사가 없습니다':doneStatusFilter==='all'?'조사 항목이 없습니다':'완료된 조사가 없습니다';
+    listEl.innerHTML=`<div class="done-empty"><div class="ei">✅</div><p>${msg}</p></div>`;return;
+  }
+  // 그룹: 완료건은 완료일 기준 / 미결·부분은 수확예정일 기준
+  const grps={};
+  cropFiltered.forEach(x=>{
+    const key=(x.status==='done'&&x.doneDate)?x.doneDate:(x.hdate?('h:'+x.hdate):'미정');
+    (grps[key]=grps[key]||[]).push(x);
+  });
+  function keyRank(k){if(k==='미정')return{t:3,v:''};if(k.startsWith('h:'))return{t:2,v:dk(k.slice(2))};return{t:1,v:k};}
+  const keys=Object.keys(grps).sort((a,b)=>{
+    const ra=keyRank(a),rb=keyRank(b);
+    if(ra.t!==rb.t)return ra.t-rb.t;
+    if(ra.v<rb.v)return doneSortDesc?1:-1;
+    if(ra.v>rb.v)return doneSortDesc?-1:1;
+    return 0;
+  });
   let html='';
-  sortedDates.forEach(dt=>{
-    const g=grps[dt];const totalCnt=g.reduce((a,x)=>a+x.cnt,0);
-    const d=strToDate(dt);const lbl=getDateLabel(dt);
-    const dtLabel=`${d.getFullYear()}.${d.getMonth()+1}.${d.getDate()}(${DAY_KO[d.getDay()]})${lbl?' · '+lbl:''}`;
-    html+=`<div class="done-date-group"><div class="done-date-hdr">📅 ${dtLabel} <span class="done-cnt-badge">${g.length}명 · ${totalCnt}건</span></div>`;
-    g.forEach(x=>{html+=`<div class="done-row"><div class="done-item-icon">${ce(x.crop)}</div><div class="done-info"><div class="done-name">${x.name}</div><div class="done-meta">${ce(x.crop)} ${x.crop} · ${x.pname}${x.insp?' · '+x.insp:''}</div>${x.m?`<div class="memo-badge">📌 ${x.m}</div>`:''}</div><div class="done-cnt-val">${x.cnt}건</div></div>`;});
+  keys.forEach(k=>{
+    const g=grps[k];const totalCnt=g.reduce((a,x)=>a+x.cnt,0);
+    let hdr;
+    if(k==='미정') hdr='📌 수확예정일 미정';
+    else if(k.startsWith('h:')){const raw=k.slice(2);hdr='🌾 수확예정 '+(raw.includes('-')?fmtDateFull(raw):raw);}
+    else{const d=strToDate(k);const lbl=getDateLabel(k);hdr=`📅 ${d.getFullYear()}.${d.getMonth()+1}.${d.getDate()}(${DAY_KO[d.getDay()]})${lbl?' · '+lbl:''}`;}
+    html+=`<div class="done-date-group"><div class="done-date-hdr">${hdr} <span class="done-cnt-badge">${g.length}명 · ${totalCnt}건</span></div>`;
+    g.forEach(x=>{
+      const stTxt=x.status==='done'?`<span style="color:var(--green);font-weight:800">완료 ${x.cnt}건</span>`
+        :x.status==='partial'?`<span style="color:#f57f17;font-weight:800">${x.doneCnt}/${x.cnt}건</span>`
+        :`<span style="color:var(--sub);font-weight:800">${x.cnt}건</span>`;
+      const telHtml=x.tel?`<a class="tel-badge" href="tel:${x.tel}" onclick="event.stopPropagation()">☎ ${x.tel}</a>`:'';
+      html+=`<div class="done-row" onclick="jumpToItem('${x.projId}',${x.itemIdx})"><div class="done-item-icon">${ce(x.crop)}</div><div class="done-info"><div class="done-name">${x.name}</div><div class="done-meta">${ce(x.crop)} ${x.crop} · ${x.pname}${x.insp?' · '+x.insp:''}</div>${x.m?`<div class="memo-badge">📌 ${x.m}</div>`:''}${telHtml}</div><div class="done-cnt-val">${stTxt}</div></div>`;
+    });
     html+='</div>';
   });
   listEl.innerHTML=html;
 }
 function setDoneFilter(c){doneFilterCrop=c;renderDoneList();}
+function setDoneStatusFilter(s){doneStatusFilter=s;renderDoneList();}
+function toggleDoneSort(){doneSortDesc=!doneSortDesc;renderDoneList();}
+function jumpToItem(projId,itemIdx){openProj(projId);setTimeout(()=>openItemSheet(itemIdx),250);}
 
 // ══ 공유 ══
 function openShare(mode){
@@ -1688,6 +1956,151 @@ function confirmImport(){
   renderList();
 }
 
+// ══ 엑셀 가져오기 ══
+function openExcelImport(){
+  load();
+  _excelRows=null;_excelGroups=null;
+  document.querySelectorAll('#ov-excel .chip').forEach(c=>c.classList.remove('on'));
+  document.getElementById('xl-crop').value='';
+  document.getElementById('xl-insp').value='';
+  document.getElementById('xl-file').value='';
+  document.getElementById('xl-preview').style.display='none';
+  document.getElementById('xl-preview-list').innerHTML='';
+  document.getElementById('xl-crop-hint').style.display='none';
+  openOv('ov-excel');
+}
+function xlPickCrop(el,v){
+  document.querySelectorAll('#ov-excel .chip').forEach(c=>c.classList.remove('on'));
+  el.classList.add('on');document.getElementById('xl-crop').value=v;
+  if(_excelRows)_buildExcelPreview();
+}
+function downloadTemplate(){
+  if(typeof XLSX==='undefined'){showToast('⚠️ 잠시 후 다시 시도하세요');return;}
+  const aoa=[
+    ['품목','농협','지점','조사자','계약자명','건수','수확예정일','전화번호','메모'],
+    ['마늘','김녕농협','우도지점','홍길동','김철수',3,'2026-06-15','010-1234-5678','전화요망'],
+    ['마늘','김녕농협','우도지점','홍길동','이영희',2,'2026-06-16','',''],
+    ['양파','성산농협','','홍길동','박민수',5,'','010-9876-5432','']
+  ];
+  const ws=XLSX.utils.aoa_to_sheet(aoa);
+  ws['!cols']=[{wch:10},{wch:12},{wch:10},{wch:8},{wch:10},{wch:6},{wch:12},{wch:15},{wch:14}];
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'계약자목록');
+  XLSX.writeFile(wb,'조사관리_양식.xlsx');
+  showToast('📄 양식 파일을 저장했습니다');
+}
+const _XLH={
+  coop:['농협','농협명','조합','조합명','coop'],
+  branch:['지점','지점명','branch'],
+  crop:['품목','작물','crop'],
+  insp:['조사자','담당','담당자','inspector'],
+  name:['계약자명','계약자','이름','성명','name'],
+  cnt:['건수','조사건수','count'],
+  date:['수확예정일','수확일','예정일','수확','date'],
+  tel:['전화번호','전화','연락처','휴대폰','핸드폰','tel','phone','hp'],
+  memo:['메모','비고','특이사항','note','memo']
+};
+function _matchCol(headers){
+  const map={};
+  headers.forEach((h,idx)=>{
+    const hn=String(h||'').replace(/\s/g,'').toLowerCase();
+    if(!hn)return;
+    for(const key in _XLH){
+      if(map[key]!==undefined)continue;
+      if(_XLH[key].some(k=>hn===k.toLowerCase()||hn.includes(k.toLowerCase()))) map[key]=idx;
+    }
+  });
+  return map;
+}
+function _fmtXlDate(v){
+  if(v===''||v==null)return'';
+  if(v instanceof Date&&!isNaN(v))return dateToStr(v);
+  if(typeof v==='number'){const d=new Date(Math.round((v-25569)*86400*1000));if(!isNaN(d))return dateToStr(d);}
+  const s=String(v).trim();
+  const m=s.match(/^(\d{4})[.\-\/](\d{1,2})[.\-\/](\d{1,2})/);
+  if(m)return `${m[1]}-${String(+m[2]).padStart(2,'0')}-${String(+m[3]).padStart(2,'0')}`;
+  return s; // '20일' 같은 텍스트도 앱이 지원하므로 그대로
+}
+function xlOnFile(input){
+  const file=input.files[0];if(!file)return;
+  if(typeof XLSX==='undefined'){showToast('⚠️ 잠시 후 다시 시도하세요');return;}
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const wb=XLSX.read(new Uint8Array(e.target.result),{type:'array',cellDates:true});
+      const ws=wb.Sheets[wb.SheetNames[0]];
+      const aoa=XLSX.utils.sheet_to_json(ws,{header:1,defval:'',raw:false,blankrows:false});
+      if(!aoa.length){showToast('⚠️ 빈 파일입니다');return;}
+      let hr=0;
+      for(let i=0;i<Math.min(aoa.length,6);i++){
+        const row=(aoa[i]||[]).map(c=>String(c||'').replace(/\s/g,''));
+        if(row.some(c=>/계약자|이름|성명|name/i.test(c))||row.some(c=>/농협|조합/.test(c))){hr=i;break;}
+      }
+      const cmap=_matchCol(aoa[hr]||[]);
+      if(cmap.name===undefined){showToast('⚠️ 계약자명 열을 찾을 수 없습니다');return;}
+      const rows=[];
+      for(let i=hr+1;i<aoa.length;i++){
+        const r=aoa[i];if(!r)continue;
+        const get=k=>cmap[k]!==undefined?String(r[cmap[k]]??'').trim():'';
+        const name=get('name');if(!name)continue;
+        const cntRaw=get('cnt').replace(/[^0-9.]/g,'');
+        rows.push({name,coop:get('coop'),branch:get('branch'),crop:get('crop'),insp:get('insp'),
+          cnt:parseInt(cntRaw)||0,date:_fmtXlDate(cmap.date!==undefined?r[cmap.date]:''),
+          tel:get('tel'),memo:get('memo')});
+      }
+      if(!rows.length){showToast('⚠️ 계약자 데이터가 없습니다');return;}
+      _excelRows=rows;_buildExcelPreview();
+    }catch(err){console.error(err);showToast('⚠️ 파일을 읽을 수 없습니다');}
+  };
+  reader.readAsArrayBuffer(file);
+}
+function _buildExcelPreview(){
+  if(!_excelRows)return;
+  const fallbackCrop=(document.getElementById('xl-crop').value||'').trim();
+  const fallbackInsp=(document.getElementById('xl-insp').value||'').trim();
+  const groups={};
+  _excelRows.forEach(r=>{
+    const crop=r.crop||fallbackCrop||'기타';
+    const insp=r.insp||fallbackInsp||'';
+    const coop=r.coop||'(농협미입력)';
+    const key=[crop,coop,r.branch,insp].join('|');
+    if(!groups[key])groups[key]={crop,coop,branch:r.branch,insp,items:[]};
+    groups[key].items.push({n:r.name,d:r.date||'',c:r.cnt,s:'pending',doneCnt:0,doneDate:'',m:r.memo||'',tel:r.tel||''});
+  });
+  _excelGroups=Object.values(groups);
+  let html='',needCrop=false;
+  _excelGroups.forEach(g=>{
+    if(g.crop==='기타'&&!fallbackCrop)needCrop=true;
+    const nm=g.branch?`${g.coop} ${g.branch}`:g.coop;
+    const tot=g.items.reduce((a,x)=>a+(+x.c||0),0);
+    html+=`<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid #edf5f0">
+      <div style="font-size:20px">${ce(g.crop)}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:700">${g.crop} — ${nm}</div>
+        <div style="font-size:11px;color:var(--sub)">${g.insp?g.insp+' · ':''}${g.items.length}명 · ${tot}건</div>
+      </div>
+      <div style="font-size:11px;font-weight:700;color:var(--green);background:#e8faf3;padding:2px 8px;border-radius:10px;flex-shrink:0">신규</div>
+    </div>`;
+  });
+  document.getElementById('xl-preview-list').innerHTML=html;
+  document.getElementById('xl-preview').style.display='';
+  document.getElementById('xl-confirm-btn').textContent=`✓ ${_excelGroups.length}개 프로젝트 만들기 (${_excelRows.length}명)`;
+  document.getElementById('xl-crop-hint').style.display=needCrop?'':'none';
+}
+function confirmExcelImport(){
+  if(!_excelGroups||!_excelGroups.length){showToast('⚠️ 먼저 파일을 선택하세요');return;}
+  load();
+  _excelGroups.forEach(g=>{
+    db.projects.unshift({id:uid(),crop:g.crop,coop:g.coop,branch:g.branch||'',insp:g.insp||'',created:Date.now(),items:g.items});
+  });
+  save();
+  closeOv('ov-excel');
+  const total=_excelRows.length,gc=_excelGroups.length;
+  _excelRows=null;_excelGroups=null;
+  renderList();
+  showToast(`✅ ${gc}개 프로젝트 · ${total}명 추가됐습니다`,3000);
+}
+
 // ══ 유틸 ══
 function openOv(id){document.getElementById(id).classList.add('on');}
 function closeOv(id){document.getElementById(id).classList.remove('on');}
@@ -1774,8 +2187,6 @@ function saveCapture(){
 
 // ══ 초기화 ══
 load();
-relayout();
-setTimeout(relayout,300);  // 폰트/안전영역 반영 후 한 번 더
 (function restoreLastScreen(){
   const lastScreen=localStorage.getItem('last_screen');
   const lastProjId=localStorage.getItem('last_proj_id');
@@ -1783,61 +2194,39 @@ setTimeout(relayout,300);  // 폰트/안전영역 반영 후 한 번 더
     _curTab=i;
     document.querySelectorAll('.stab').forEach((t,j)=>t.classList.toggle('on',i===j));
     [0,1,2].forEach(j=>{const p=document.getElementById(`tab-pane-${j}`);if(p)p.classList.toggle('on',i===j);});
-    const sl=document.getElementById('tab-slider');
-    if(sl){sl.style.transition='none';sl.style.transform=`translateX(${-i*100}%)`;requestAnimationFrame(()=>{sl.style.transition='';});}
     document.getElementById('header-sub').textContent=HEADER_SUBS[i];
   }
   if(lastScreen==='proj'&&lastProjId){
     const p=db.projects.find(x=>x.id===lastProjId);
     if(p){jumpTo(0);renderList();openProj(lastProjId);return;}
   }
-  if(lastScreen==='sched'){jumpTo(1);renderCurrentView();return;}
+  if(lastScreen==='sched'){jumpTo(1);curMonthSelDate=todayStr();switchView(2);return;}
   if(lastScreen==='done'){jumpTo(2);renderDoneList();return;}
   jumpTo(0);renderList();
 })();
 
-// ══ 스와이프로 탭 전환 (계산기와 동일: 실시간 드래그 + 부드러운 릴리즈) ══
+// ══ 스와이프로 탭 전환 ══
 (function(){
   let _sx=0,_sy=0,_dragging=false,_vertLocked=false;
-  const TABS=3;
-  const getSlider=()=>document.getElementById('tab-slider');
   function isBlocked(){return!!(document.querySelector('.ov.on,.capture-ov.on')||document.getElementById('scr-det').classList.contains('on'));}
-  // 가로 스크롤되는 영역(완료 필터바)에서는 탭 스와이프 막기
-  function inHScroll(el){return el&&el.closest&&el.closest('.done-toolbar');}
-
   document.addEventListener('touchstart',e=>{
-    if(isBlocked()||inHScroll(e.target))return;
+    if(isBlocked())return;
     _sx=e.touches[0].clientX;_sy=e.touches[0].clientY;
     _dragging=false;_vertLocked=false;
-    const s=getSlider();if(s)s.style.transition='none';
   },{passive:true});
-
   document.addEventListener('touchmove',e=>{
     if(isBlocked())return;
     const dx=e.touches[0].clientX-_sx,dy=e.touches[0].clientY-_sy;
     if(!_dragging&&!_vertLocked){
-      if(Math.abs(dy)>Math.abs(dx)+5){_vertLocked=true;return;}  // 세로 스크롤 우선
+      if(Math.abs(dy)>Math.abs(dx)+5){_vertLocked=true;return;}
       if(Math.abs(dx)>8)_dragging=true;
     }
-    if(!_dragging||_vertLocked)return;
-    const s=getSlider();if(!s)return;
-    const base=-_curTab*100;
-    let pct=(dx/window.innerWidth)*100;
-    if(_curTab===0&&dx>0)        pct*=0.2;   // 양 끝에서 저항 (오바 방지)
-    if(_curTab===TABS-1&&dx<0)   pct*=0.2;
-    s.style.transform=`translateX(${base+pct}%)`;
   },{passive:true});
-
   document.addEventListener('touchend',e=>{
     if(!_dragging||_vertLocked){_dragging=false;return;}
     const dx=e.changedTouches[0].clientX-_sx;
-    const s=getSlider();
-    if(dx<-50&&_curTab<TABS-1)      switchMain(_curTab+1);
-    else if(dx>50&&_curTab>0)       switchMain(_curTab-1);
-    else if(s){                      // 임계값 미달 → 제자리 스냅백
-      s.style.transition='transform .3s cubic-bezier(.4,0,.2,1)';
-      s.style.transform=`translateX(${-_curTab*100}%)`;
-    }
+    if(dx<-50&&_curTab<2)switchMain(_curTab+1);
+    else if(dx>50&&_curTab>0)switchMain(_curTab-1);
     _dragging=false;
   },{passive:true});
 })();
