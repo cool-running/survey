@@ -334,6 +334,16 @@ body{font-family:-apple-system,'Noto Sans KR',sans-serif;background:var(--bg);co
 .cap-sum-val.g{color:var(--green)}.cap-sum-val.r{color:var(--red)}.cap-sum-val.b{color:var(--blue)}
 .cap-sum-lbl{font-size:9px;color:#666;margin-top:2px;font-weight:600}
 .cap-footer{font-size:10px;color:#aaa;text-align:right;margin-top:6px}
+
+/* ── 백업 권장 배너 ── */
+.backup-banner{display:flex;flex-wrap:wrap;align-items:center;gap:10px;background:#FFF8E1;border:1px solid #FFE082;border-radius:var(--r);padding:12px 14px;margin-bottom:12px}
+.bb-icon{font-size:22px;flex-shrink:0}
+.bb-text{flex:1;min-width:150px;font-size:11.5px;line-height:1.5;color:#9b7a1a}
+.bb-text b{display:block;font-size:13px;color:#5d4500;margin-bottom:1px}
+.bb-actions{display:flex;gap:7px;flex-shrink:0;margin-left:auto}
+.bb-btn{border:none;border-radius:8px;padding:8px 13px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit}
+.bb-go{background:var(--orange);color:#fff}
+.bb-snooze{background:#fff;color:#9b7a1a;border:1px solid #FFE082}
 </style>
 </head>
 <body>
@@ -686,9 +696,34 @@ function load(){
       localStorage.setItem(SKEY,JSON.stringify(schedules));
     }
   }catch(e){schedules=[];}
+  // 계약자 id 부여 + 일정 itemIdx→itemId 변환
+  const changed=ensureIds(db.projects,schedules);
+  // 변환 불가(itemId 없는) 일정은 깨진 데이터이므로 제거
+  const before=schedules.length;
+  schedules=schedules.filter(s=>s.itemId);
+  if(changed||schedules.length!==before)save();
 }
 function save(){localStorage.setItem(KEY,JSON.stringify(db));localStorage.setItem(SKEY,JSON.stringify(schedules));}
-function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,5);}
+let _uidc=0;
+function uid(){return Date.now().toString(36)+(_uidc++).toString(36)+Math.random().toString(36).slice(2,5);}
+
+// ── 계약자 id 조회 헬퍼 (일정은 itemId로 계약자를 참조) ──
+function getItem(p,itemId){return p&&p.items?p.items.find(x=>x.id===itemId):null;}
+
+// ── 마이그레이션: 계약자에 고유 id 부여 + 일정의 itemIdx → itemId 변환 ──
+function ensureIds(projects,scheds){
+  let changed=false;
+  (projects||[]).forEach(p=>{
+    if(!p.items)p.items=[];
+    p.items.forEach(x=>{if(!x.id){x.id=uid();changed=true;}});
+  });
+  (scheds||[]).forEach(s=>{
+    if(s.itemId)return;
+    const p=(projects||[]).find(x=>x.id===s.projId);
+    if(p&&typeof s.itemIdx==='number'&&p.items[s.itemIdx]){s.itemId=p.items[s.itemIdx].id;changed=true;}
+  });
+  return changed;
+}
 
 // ── 날짜 유틸 ──
 function dateToStr(d){return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
@@ -708,7 +743,7 @@ const DORD=['14일','15일','16일','18일','19일','20일','20일 이후','21�
 const dk=d=>{if(!d)return'9999';if(d.includes('-'))return d;const i=DORD.indexOf(d);return i<0?'99':String(i).padStart(2,'0');};
 const ce=c=>{const m={마늘:'🧄',양파:'🧅',착과수조사:'🍇',적과후착과수조사:'🍎',벼:'🌾',콩:'🫘'};return m[c]||'🌾'};
 
-function isInSched(projId,itemIdx){return schedules.some(s=>s.projId===projId&&s.itemIdx===itemIdx);}
+function isInSched(projId,itemId){return schedules.some(s=>s.projId===projId&&s.itemId===itemId);}
 function getSchedForDate(dateStr){return schedules.filter(s=>s.dateStr===dateStr);}
 
 // ══ 서브탭 전환 (관리/일정/완료) ══
@@ -779,8 +814,7 @@ function openSchedDateSheet(dateStr, schedIdx){
   load();
   const daySched=getSchedForDate(dateStr);
   const s=daySched[schedIdx];if(!s)return;
-  const p=db.projects.find(x=>x.id===s.projId);if(!p||!p.items[s.itemIdx])return;
-  const x=p.items[s.itemIdx];
+  const p=db.projects.find(x=>x.id===s.projId);const x=getItem(p,s.itemId);if(!p||!x)return;
   const pname=p.branch?`${p.coop} ${p.branch}`:p.coop;
   document.getElementById('sched-date-title').textContent='일정 날짜 변경';
   document.getElementById('sched-date-info').innerHTML=
@@ -810,15 +844,15 @@ function confirmSchedDate(){
   const daySched=getSchedForDate(dateStr);
   const s=daySched[schedIdx];if(!s){closeOv('ov-sched-date');return;}
   // 이미 그 날짜에 같은 계약자 일정 있는지 체크
-  const already=schedules.find(x=>x.dateStr===newDate&&x.projId===s.projId&&x.itemIdx===s.itemIdx);
+  const already=schedules.find(x=>x.dateStr===newDate&&x.projId===s.projId&&x.itemId===s.itemId);
   if(already){showToast('⚠️ 이미 그 날짜에 일정이 있습니다');return;}
   s.dateStr=newDate;
   // 체크 상태 초기화 (날짜 바뀌면 완료 취소)
   if(s.checked){
     s.checked=false;
     const p=db.projects.find(x=>x.id===s.projId);
-    if(p&&p.items[s.itemIdx]){
-      const item=p.items[s.itemIdx];
+    const item=getItem(p,s.itemId);
+    if(item){
       const schedCnt=s.cnt||item.c||0;
       item.doneCnt=Math.max(0,(item.doneCnt||0)-schedCnt);
       item.doneDate='';
@@ -870,9 +904,9 @@ function renderDayView(){
 
   let tot=0,don=0;
   daySched.forEach(s=>{
-    const p=db.projects.find(x=>x.id===s.projId);if(!p||!p.items[s.itemIdx])return;
-    const sc=s.cnt||p.items[s.itemIdx].c||0;tot+=sc;
-    const key=`${s.projId}:${s.itemIdx}:${ds}`;
+    const p=db.projects.find(x=>x.id===s.projId);const it=getItem(p,s.itemId);if(!p||!it)return;
+    const sc=s.cnt||it.c||0;tot+=sc;
+    const key=`${s.projId}:${s.itemId}:${ds}`;
     const checked=_pendingChecks.hasOwnProperty(key)?_pendingChecks[key]:s.checked;
     if(checked)don+=sc;
   });
@@ -881,10 +915,9 @@ function renderDayView(){
   let html='';
   let needSave=false;
   daySched.forEach((s,si)=>{
-    const p=db.projects.find(x=>x.id===s.projId);if(!p||!p.items[s.itemIdx])return;
-    const x=p.items[s.itemIdx];
+    const p=db.projects.find(x=>x.id===s.projId);const x=getItem(p,s.itemId);if(!p||!x)return;
     const pname=p.branch?`${p.coop} ${p.branch}`:p.coop;
-    const key=`${s.projId}:${s.itemIdx}:${ds}`;
+    const key=`${s.projId}:${s.itemId}:${ds}`;
     // item.s가 done/partial 아니면 s.checked도 false로 동기화 (저장 포함)
     const actualChecked = s.checked && (x.s==='done'||x.s==='partial');
     if(s.checked !== actualChecked){ s.checked=actualChecked; needSave=true; }
@@ -944,12 +977,11 @@ function saveDayDone(){
   load();
   let count=0, doneNames=[], cancelNames=[];
   Object.entries(_pendingChecks).forEach(([key,checked])=>{
-    const[projId,itemIdx,dateStr]=key.split(':');
-    const ii=parseInt(itemIdx);
-    const s=schedules.find(x=>x.projId===projId&&x.itemIdx===ii&&x.dateStr===dateStr);
+    const[projId,itemId,dateStr]=key.split(':');
+    const s=schedules.find(x=>x.projId===projId&&x.itemId===itemId&&x.dateStr===dateStr);
     if(!s)return;
-    const p=db.projects.find(x=>x.id===projId);if(!p||!p.items[ii])return;
-    const item=p.items[ii];const schedCnt=s.cnt||item.c||0;const totalCnt=item.c||0;
+    const p=db.projects.find(x=>x.id===projId);const item=getItem(p,itemId);if(!p||!item)return;
+    const schedCnt=s.cnt||item.c||0;const totalCnt=item.c||0;
     if(typeof item.doneCnt!=='number')item.doneCnt=0;
 
     if(checked&&!s.checked){
@@ -984,8 +1016,8 @@ function saveDayDone(){
 function toggleDone(dateStr,schedIdx){
   load();
   const daySched=getSchedForDate(dateStr);const s=daySched[schedIdx];if(!s)return;
-  const p=db.projects.find(x=>x.id===s.projId);if(!p||!p.items[s.itemIdx])return;
-  const item=p.items[s.itemIdx];const schedCnt=s.cnt||item.c||0;const totalCnt=item.c||0;
+  const p=db.projects.find(x=>x.id===s.projId);const item=getItem(p,s.itemId);if(!p||!item)return;
+  const schedCnt=s.cnt||item.c||0;const totalCnt=item.c||0;
   if(typeof item.doneCnt!=='number')item.doneCnt=0;
   if(s.checked){
     item.doneCnt=Math.max(0,item.doneCnt-schedCnt);
@@ -1032,8 +1064,8 @@ function renderWeekDetail(){
   let html=`<div style="padding:8px 14px 4px;font-size:12px;font-weight:700;color:var(--sub);background:var(--bg)">${title} · ${daySched.length}건</div>`;
   if(!daySched.length){html+=`<div class="sched-empty"><div class="ei">📅</div><p>이 날 일정이 없습니다</p></div>`;}
   else daySched.forEach((s,si)=>{
-    const p=db.projects.find(x=>x.id===s.projId);if(!p||!p.items[s.itemIdx])return;
-    const x=p.items[s.itemIdx];const pname=p.branch?`${p.coop} ${p.branch}`:p.coop;
+    const p=db.projects.find(x=>x.id===s.projId);const x=getItem(p,s.itemId);if(!p||!x)return;
+    const pname=p.branch?`${p.coop} ${p.branch}`:p.coop;
     html+=`<div class="sched-row ${s.checked?'done':''}"><div class="sched-chk ${s.checked?'done':''}" onclick="toggleDone('${ds}',${si})">${s.checked?'✓':''}</div><div class="sched-info"><div class="sched-name">${x.n}</div><div class="sched-meta">${ce(p.crop)} ${p.crop} · ${pname}</div>${x.m?`<div class="memo-badge">📌 ${x.m}</div>`:''}</div><div class="sched-cnt">${s.cnt||x.c}건</div><button class="sched-del" onclick="removeFromSched('${ds}',${si})">✕</button></div>`;
   });
   html+=`<div class="add-sched-btn" style="margin:10px 14px" onclick="openPickSheetForDate('${ds}')">＋ ${title} 일정 추가</div>`;
@@ -1057,8 +1089,8 @@ function renderMonthDetail(ds){
   const daySched=getSchedForDate(ds);let html=`<div class="month-detail-hdr">${title} · ${daySched.length}건 일정</div>`;
   if(!daySched.length){html+=`<div style="text-align:center;padding:20px;color:var(--hint);font-size:13px">일정이 없습니다</div>`;}
   else daySched.forEach((s,si)=>{
-    const p=db.projects.find(x=>x.id===s.projId);if(!p||!p.items[s.itemIdx])return;
-    const x=p.items[s.itemIdx];const pname=p.branch?`${p.coop} ${p.branch}`:p.coop;
+    const p=db.projects.find(x=>x.id===s.projId);const x=getItem(p,s.itemId);if(!p||!x)return;
+    const pname=p.branch?`${p.coop} ${p.branch}`:p.coop;
     html+=`<div class="sched-row ${s.checked?'done':''}"><div class="sched-chk ${s.checked?'done':''}" onclick="toggleDone('${ds}',${si});renderMonthView()">${s.checked?'✓':''}</div><div class="sched-info"><div class="sched-name">${x.n}</div><div class="sched-meta">${ce(p.crop)} ${p.crop} · ${pname}</div></div><div class="sched-cnt">${s.cnt||x.c}건</div><button class="sched-del" onclick="removeFromSched('${ds}',${si});renderMonthView()">✕</button></div>`;
   });
   html+=`<div class="add-sched-btn" style="margin:10px 14px" onclick="openPickSheetForDate('${ds}')">＋ 일정 추가</div>`;
@@ -1077,10 +1109,10 @@ function openPickSheetForDate(ds){
 function onPickDateChange(){pickTargetDate=document.getElementById('pick-date-input').value||todayStr();renderPickList();}
 function renderPickList(){
   load();const q=(document.getElementById('pick-q').value||'').trim();
-  const addedThisDate=new Set(schedules.filter(s=>s.dateStr===pickTargetDate).map(s=>`${s.projId}:${s.itemIdx}`));
+  const addedThisDate=new Set(schedules.filter(s=>s.dateStr===pickTargetDate).map(s=>`${s.projId}:${s.itemId}`));
   const addedOtherDate=new Map();
   schedules.filter(s=>s.dateStr!==pickTargetDate).forEach(s=>{
-    const key=`${s.projId}:${s.itemIdx}`;
+    const key=`${s.projId}:${s.itemId}`;
     if(!addedOtherDate.has(key)) addedOtherDate.set(key,s.dateStr);
   });
   let html='',count=0;
@@ -1088,7 +1120,7 @@ function renderPickList(){
     const pname=p.branch?`${p.coop} ${p.branch}`:p.coop;
     p.items.forEach((x,i)=>{
       if(q&&!x.n.includes(q))return;if(x.s==='done')return;count++;
-      const key=`${p.id}:${i}`;
+      const key=`${p.id}:${x.id}`;
       const isAddedHere=addedThisDate.has(key);
       const otherDate=addedOtherDate.get(key);
       const isPicked=pickedItems.has(key);
@@ -1099,7 +1131,7 @@ function renderPickList(){
         badge=`<span style="font-size:10px;color:var(--orange);font-weight:700"> · ${lbl} 일정→이 날로 변경</span>`;
       }
       const dimmed=isAddedHere; // 이 날 이미 추가된 건만 비활성
-      html+=`<div class="pick-item" style="${dimmed?'opacity:.4;pointer-events:none':''}" onclick="togglePick('${p.id}',${i},'${key}')">
+      html+=`<div class="pick-item" style="${dimmed?'opacity:.4;pointer-events:none':''}" onclick="togglePick('${p.id}','${x.id}','${key}')">
         <div class="pick-chk ${isPicked||isAddedHere?'on':''}">${isPicked||isAddedHere?'✓':''}</div>
         <div style="flex:1;min-width:0">
           <div style="font-size:14px;font-weight:600">${x.n}${badge}</div>
@@ -1112,9 +1144,9 @@ function renderPickList(){
   });
   document.getElementById('pick-list').innerHTML=count?html:'<div style="text-align:center;padding:24px;color:var(--hint);font-size:13px">계약자가 없습니다<br>먼저 프로젝트에 계약자를 추가하세요</div>';
 }
-function togglePick(projId,itemIdx,key){
+function togglePick(projId,itemId,key){
   load();
-  if(schedules.some(s=>s.dateStr===pickTargetDate&&s.projId===projId&&s.itemIdx===itemIdx))return;
+  if(schedules.some(s=>s.dateStr===pickTargetDate&&s.projId===projId&&s.itemId===itemId))return;
   if(pickedItems.has(key))pickedItems.delete(key);else pickedItems.add(key);
   renderPickList();
 }
@@ -1124,12 +1156,12 @@ function confirmPick(){
   // 다른 날짜에서 이동할 항목 목록
   const moves=[];
   pickedItems.forEach(key=>{
-    const[projId,itemIdx]=key.split(':');const ii=parseInt(itemIdx);
-    const existing=schedules.find(s=>s.projId===projId&&s.itemIdx===ii&&s.dateStr!==pickTargetDate);
+    const[projId,itemId]=key.split(':');
+    const existing=schedules.find(s=>s.projId===projId&&s.itemId===itemId&&s.dateStr!==pickTargetDate);
     if(existing){
       const p=db.projects.find(x=>x.id===projId);
       const lbl=getDateLabel(existing.dateStr)||fmtDateFull(existing.dateStr);
-      moves.push(`${p?.items[ii]?.n||''} (${lbl} → ${fmtDateFull(pickTargetDate)})`);
+      moves.push(`${getItem(p,itemId)?.n||''} (${lbl} → ${fmtDateFull(pickTargetDate)})`);
     }
   });
   if(moves.length){
@@ -1147,11 +1179,11 @@ function confirmPick(){
 function _doConfirmPick(){
   load();
   pickedItems.forEach(key=>{
-    const[projId,itemIdx]=key.split(':');const ii=parseInt(itemIdx);
-    schedules=schedules.filter(s=>!(s.projId===projId&&s.itemIdx===ii&&s.dateStr!==pickTargetDate));
-    if(!schedules.some(s=>s.dateStr===pickTargetDate&&s.projId===projId&&s.itemIdx===ii)){
-      const p=db.projects.find(x=>x.id===projId);const maxCnt=p&&p.items[ii]?(+p.items[ii].c||0):0;
-      schedules.push({dateStr:pickTargetDate,projId,itemIdx:ii,cnt:maxCnt,checked:false});
+    const[projId,itemId]=key.split(':');
+    schedules=schedules.filter(s=>!(s.projId===projId&&s.itemId===itemId&&s.dateStr!==pickTargetDate));
+    if(!schedules.some(s=>s.dateStr===pickTargetDate&&s.projId===projId&&s.itemId===itemId)){
+      const p=db.projects.find(x=>x.id===projId);const it=getItem(p,itemId);const maxCnt=it?(+it.c||0):0;
+      schedules.push({dateStr:pickTargetDate,projId,itemId,cnt:maxCnt,checked:false});
     }
   });
   save();closeOv('ov-pick');renderCurrentView();
@@ -1179,8 +1211,9 @@ function renderUpcoming(){
     const cropSet=new Set();
     list.forEach(s=>{
       const p=db.projects.find(x=>x.id===s.projId);
-      if(!p||!p.items[s.itemIdx])return;
-      const cnt=s.cnt||p.items[s.itemIdx].c||0;
+      const it=getItem(p,s.itemId);
+      if(!p||!it)return;
+      const cnt=s.cnt||it.c||0;
       tot+=cnt; if(s.checked)done+=cnt;
       cropSet.add(ce(p.crop)+' '+p.crop);
     });
@@ -1220,11 +1253,31 @@ function renderUpcoming(){
 }
 
 // ══ 프로젝트 목록 ══
+// ── 백업 권장 배너 ──
+function backupBannerHtml(){
+  if(!db.projects.length)return'';
+  if(sessionStorage.getItem('backup_snooze'))return'';
+  const last=parseInt(localStorage.getItem('last_export')||'0');
+  const stale=!last||(Date.now()-last)>7*86400000;
+  if(!stale)return'';
+  const days=last?Math.floor((Date.now()-last)/86400000):null;
+  const msg=last?`마지막 백업이 ${days}일 전이에요.`:'아직 백업한 적이 없어요.';
+  return `<div class="backup-banner">
+    <div class="bb-icon">💾</div>
+    <div class="bb-text"><b>데이터 백업 권장</b>${msg} 휴대폰 교체나 앱 데이터 삭제 시 복구가 불가능하니 파일로 저장해두세요.</div>
+    <div class="bb-actions">
+      <button class="bb-btn bb-go" onclick="openShare('all')">지금 백업</button>
+      <button class="bb-btn bb-snooze" onclick="snoozeBackup()">나중에</button>
+    </div>
+  </div>`;
+}
+function snoozeBackup(){sessionStorage.setItem('backup_snooze','1');renderList();}
+
 function renderList(){
   load();
   const el=document.getElementById('proj-list');
   if(!db.projects.length){el.innerHTML=`<div class="empty-proj"><div class="ei">📋</div><p>아직 프로젝트가 없습니다<br>위 버튼으로 새 프로젝트를 만드세요</p></div>`;return;}
-  el.innerHTML=db.projects.map(p=>{
+  el.innerHTML=backupBannerHtml()+db.projects.map(p=>{
     const tot=p.items.reduce((a,x)=>a+(+x.c||0),0);
     const don=p.items.reduce((a,x)=>a+(x.s==='done'?(+x.c||0):typeof x.doneCnt==='number'?x.doneCnt:0),0);
     const pct=tot?Math.round(don/tot*100):0;
@@ -1279,7 +1332,7 @@ function renderDet(){
     g.forEach(x=>{
       const sc=x.s==='done'?'done':x.s==='fail'?'fail':x.s==='partial'?'partial':'';
       const si=x.s==='done'?'✓':x.s==='fail'?'✕':x.s==='partial'?`${x.doneCnt||0}/${x.c}`:'';
-      const inSched=isInSched(curId,x._i);
+      const inSched=isInSched(curId,x.id);
       html+=`<div class="row ${sc}${inSched?' in-sched':''}" onclick="openItemSheet(${x._i})"><div class="sdot ${sc}">${si}</div><div class="r-main"><div class="r-name">${x.n}</div>${inSched?`<div class="r-sched-tag">📅 일정등록됨</div>`:''} ${x.m?`<div class="memo-badge">📌 ${x.m}</div>`:''}</div><div class="r-cnt">${x.c}건</div><div class="r-date">${fmtDate(x.d)}</div></div>`;
     });
   });
@@ -1359,15 +1412,11 @@ function doTransfer(targetId){
   const src=db.projects.find(x=>x.id===curId);if(!src)return;
   const tgt=db.projects.find(x=>x.id===targetId);if(!tgt)return;
   const item={...src.items[editItemIdx]};
+  const itemId=item.id;
   tgt.items.push(item);
-  const newIdx=tgt.items.length-1;
-  schedules.forEach(s=>{
-    if(s.projId===curId&&s.itemIdx===editItemIdx){s.projId=targetId;s.itemIdx=newIdx;}
-  });
+  // 계약자는 id를 유지하므로 일정은 projId만 바꿔주면 됨
+  schedules.forEach(s=>{if(s.projId===curId&&s.itemId===itemId)s.projId=targetId;});
   src.items.splice(editItemIdx,1);
-  schedules.forEach(s=>{
-    if(s.projId===curId&&s.itemIdx>editItemIdx) s.itemIdx--;
-  });
   save();
   closeOv('ov-transfer');
   const nm=tgt.branch?`${tgt.coop} ${tgt.branch}`:tgt.coop;
@@ -1394,8 +1443,10 @@ function saveItem(){
   else if(curSt2==='done')doneCnt=totalCnt;
   // 완료 아닌 경우 doneDate 자동 초기화
   const doneDate=curSt2==='done'?(document.getElementById('i-done-date').value||''):'';
-  const item={n:name,d:document.getElementById('i-date').value||'',c:totalCnt,s:finalStatus,doneCnt,doneDate,m:(document.getElementById('i-memo').value||'').trim()};
   load();const p=db.projects.find(x=>x.id===curId);if(!p)return;
+  // 수정 시 기존 id 보존(일정이 이 id를 참조), 신규는 새 id 부여
+  const keepId=(editItemIdx!==null&&p.items[editItemIdx])?p.items[editItemIdx].id:uid();
+  const item={id:keepId,n:name,d:document.getElementById('i-date').value||'',c:totalCnt,s:finalStatus,doneCnt,doneDate,m:(document.getElementById('i-memo').value||'').trim()};
   if(editItemIdx===null)p.items.push(item);else p.items[editItemIdx]=item;
   save();closeOv('ov-item');renderDet();
 }
@@ -1408,7 +1459,8 @@ function delItem(){
     okColor:'var(--red)',
     onOk:()=>{
       load();const p=db.projects.find(x=>x.id===curId);if(!p)return;
-      schedules=schedules.filter(s=>!(s.projId===curId&&s.itemIdx===editItemIdx));
+      const item=p.items[editItemIdx];if(!item){closeOv('ov-item');return;}
+      schedules=schedules.filter(s=>!(s.projId===curId&&s.itemId===item.id));
       p.items.splice(editItemIdx,1);save();closeOv('ov-item');renderDet();
     }
   });
@@ -1478,7 +1530,7 @@ function renderDoneList(){
     p.items.forEach((x,i)=>{
       // s=done이고 doneDate가 있는 항목만 표시
       if(x.s==='done'&&x.doneDate){
-        allDone.push({name:x.n,crop:p.crop,pname:nm,insp:p.insp||'',cnt:x.c||0,doneDate:x.doneDate,m:x.m||'',projId:p.id,itemIdx:i});
+        allDone.push({name:x.n,crop:p.crop,pname:nm,insp:p.insp||'',cnt:x.c||0,doneDate:x.doneDate,m:x.m||'',projId:p.id,itemId:x.id});
       }
     });
   });
@@ -1631,6 +1683,8 @@ function doExportFile(){
     :`조사관리_${projects.length}개_${now.getMonth()+1}${now.getDate()}.json`;
   a.href=url;a.download=fname;a.click();
   URL.revokeObjectURL(url);
+  localStorage.setItem('last_export',Date.now());
+  sessionStorage.removeItem('backup_snooze');
   showToast(`📁 ${projects.length}개 프로젝트 저장됐습니다`);
 }
 
@@ -1668,6 +1722,9 @@ function confirmImport(){
   if(!_importData)return;
   load();
   const projects=(_importData.projects||(_importData.db||{projects:[]}).projects)||[];
+  const impSched=_importData.schedules||[];
+  // 가져온 데이터도 id 체계로 정규화(구버전 파일 호환)
+  ensureIds(projects,impSched);
   const exist=new Set(db.projects.map(x=>x.id));
   let added=0,updated=0;
   const addedNames=[];
@@ -1675,8 +1732,7 @@ function confirmImport(){
     if(!exist.has(p.id)){db.projects.unshift(p);added++;addedNames.push(p.crop+' — '+(p.branch?`${p.coop} ${p.branch}`:p.coop));}
     else{const i=db.projects.findIndex(x=>x.id===p.id);if(i>=0){db.projects[i]=p;updated++;}}
   });
-  const impSched=_importData.schedules||[];
-  impSched.forEach(s=>{if(!schedules.some(x=>x.dateStr===s.dateStr&&x.projId===s.projId&&x.itemIdx===s.itemIdx))schedules.push(s);});
+  impSched.forEach(s=>{if(s.itemId&&!schedules.some(x=>x.dateStr===s.dateStr&&x.projId===s.projId&&x.itemId===s.itemId))schedules.push(s);});
   save();_importData=null;closeOv('ov-share');
   let msg=`✅ `;
   if(added) msg+=`${addedNames.slice(0,2).join(', ')}${addedNames.length>2?' 등':''} 추가됨`;
